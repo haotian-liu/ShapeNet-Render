@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(3DReconstruction)
+project(MRBasic)
 
 set(CMAKE_CXX_STANDARD 11)
 
@@ -24,6 +24,6 @@ set(SOURCE_FILES main.cpp
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(3DReconstruction ${SOURCE_FILES})
+add_executable(MRBasic ${SOURCE_FILES})
 
-target_link_libraries(3DReconstruction /opt/local/lib/libSOIL.dylib)
+target_link_libraries(MRBasic /opt/local/lib/libSOIL.dylib)

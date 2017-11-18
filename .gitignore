@@ -1,7 +1,7 @@
 # ---> PROJECT
 resources/*
 assets/*
-3DReconstruction
+MRBasic
 .vscode/*
 
 # ---> Clion
