@@ -13,13 +13,14 @@
 
 class Renderer {
 public:
-    Renderer() : shader(new ShaderProgram), modelMatrix(1.f) {
+    Renderer() : shader(new ShaderProgram), modelMatrix(1.f), mVao(nullptr), textures(nullptr) {
         updateCamera();
     };
 
     void setupPolygon(const std::string &filepath, const std::string &filename);
     void setupShader(const std::string &vs, const std::string &fs);
     void setupBuffer();
+    void setupTexture();
     void render();
     void mouseCallback(GLFWwindow *window, int button, int action, int mods);
     void cursorPosCallback(GLFWwindow *window, double xpos, double ypos);
@@ -42,9 +43,10 @@ private:
     glm::vec3 shapeOffset;
 
     ShaderProgram *shader;
-    GLuint mVao[10000], mVbo[5];
+    GLuint *mVao, mVbo[5];
+    GLuint *textures;
 
-    GLfloat Yaw = 90.f, Pitch = 0.f, Dist = 2000.f;
+    GLfloat Yaw = 90.f, Pitch = 0.f, Dist = 3.f;
 
     std::string filepath;
     std::string filename;

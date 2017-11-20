@@ -121,7 +121,7 @@ bool OBJLoader::load(const char *path, const char *fileName) {
         } else if (strcmp(lineHeader, "usemtl") == 0) {
             if (!vertexIndices.empty()) {
                 shape_map(vertices, vertice_mapper, geometries, vertexIndices, uvIndices, normalIndices);
-                shape->geometries.emplace_back(materials[currentMaterialId]);
+                shape->geometries.emplace_back(currentMaterialId);
             }
 
             char mtl[200];
@@ -141,7 +141,7 @@ bool OBJLoader::load(const char *path, const char *fileName) {
     }
     if (!vertexIndices.empty()) {
         shape_map(vertices, vertice_mapper, geometries, vertexIndices, uvIndices, normalIndices);
-        shape->geometries.emplace_back(materials[currentMaterialId]);
+        shape->geometries.emplace_back(currentMaterialId);
     }
 
     std::map<std::tuple<GLuint, GLuint, GLuint>, GLuint> nindex_mapper;
@@ -156,8 +156,10 @@ bool OBJLoader::load(const char *path, const char *fileName) {
         }
     }
 
+    shape->faces = 0;
     for (int i=0; i<geometries.size(); i++) {
         const auto &face_mapper = geometries[i];
+        shape->faces += face_mapper.size();
         for (int j=0; j<face_mapper.size(); j++) {
             const auto &each = face_mapper[j];
             const auto &pair = vertice_mapper[std::get<0>(each)][std::get<1>(each)];
@@ -170,6 +172,9 @@ bool OBJLoader::load(const char *path, const char *fileName) {
             shape->geometries[i].faces.push_back(index);
         }
     }
+    shape->faces /= 3;
+
+    shape->materials = materials;
 
     return true;
 }

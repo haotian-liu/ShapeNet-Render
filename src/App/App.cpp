@@ -7,10 +7,11 @@
 
 void App::init() {
     r = new Renderer;
-//    r->setupPolygon("assets/f16/", "f16.obj");
-    r->setupPolygon("assets/", "787.obj");
+    r->setupPolygon("assets/f16/", "f16.obj");
+//    r->setupPolygon("assets/", "787.obj");
     r->setupShader("shader/phong.vert", "shader/phong.frag");
     r->setupBuffer();
+    r->setupTexture();
 }
 
 void App::setViewport(int width, int height) {

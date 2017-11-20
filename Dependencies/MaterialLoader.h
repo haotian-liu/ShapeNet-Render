@@ -59,6 +59,11 @@ bool GLMaterial::load(const char *path, const char *fileName) {
             fscanf(file, "%f %f %f\n", &item.Kd.x, &item.Kd.y, &item.Kd.z);
         } else if (strcmp(lineHeaderBuffer, "Ks") == 0) {
             fscanf(file, "%f %f %f\n", &item.Ks.x, &item.Ks.y, &item.Ks.z);
+        } else if (strcmp(lineHeaderBuffer, "map_Kd") == 0) {
+            char map_Kd[200];
+            fscanf(file, "%s\n", map_Kd);
+            strcpy(item.map_Kd.filepath, path);
+            strcat(item.map_Kd.filepath, map_Kd);
         } else {
             while (fgetc(file) != '\n');
         }

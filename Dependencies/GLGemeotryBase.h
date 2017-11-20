@@ -12,6 +12,12 @@
 #include <GL/glew.h>
 #include "ext.hpp"
 
+struct MaterialMap {
+    char filepath[200];
+    GLint width, height;
+    GLubyte *image;
+};
+
 struct GLMaterialItem {
     void clear() {
         materialName = "";
@@ -19,8 +25,10 @@ struct GLMaterialItem {
         Tf = glm::vec3(1.f);
         illum = 0;
         Ka = Kd = Ks = glm::vec3(0.f);
+        memset(map_Kd.filepath, 0, sizeof(map_Kd.filepath));
     }
 
+    MaterialMap map_Kd;
     std::string materialName;
     GLfloat Ns, d, Tr;
     glm::vec3 Tf;
@@ -29,23 +37,20 @@ struct GLMaterialItem {
 };
 
 struct Geometry {
-    Geometry(const GLMaterialItem &material) : material(material) {}
-    Geometry(const GLMaterialItem &material, const std::vector<GLuint> &faces) :
-            material(material), faces(faces) {}
+    explicit Geometry(GLuint materialID) : materialID(materialID) {}
 
-    GLMaterialItem material;
+    GLuint materialID;
     std::vector<GLuint> faces;
 };
 
 struct Shape {
     Shape() = default;
-    Shape(const std::vector<glm::vec3> &vertices, const std::vector<glm::vec3> &normals, const std::vector<glm::vec2> &uvs,
-          const std::vector<Geometry> &geometries) :
-            vertices(vertices), normals(normals), uvs(uvs), geometries(geometries) {}
 
+    int faces;
     std::vector<glm::vec3> vertices, normals;
     std::vector<glm::vec2> uvs;
     std::vector<Geometry> geometries;
+    std::vector<GLMaterialItem> materials;
 };
 
 #endif //MRBASIC_GLGEMEOTRYBASE_H

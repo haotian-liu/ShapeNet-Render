@@ -1,12 +1,12 @@
 #version 330
 
 uniform vec3 LightDirection;
+uniform sampler2D textureSampler;
 
 in vec3 worldCoord;
 in vec3 eyeCoord;
 in vec3 Normal;
-
-//in vec4 color;
+in vec2 texCoord;
 
 out vec4 FragColor;
 
@@ -14,7 +14,8 @@ void main() {
     float Shininess = 1.f;
     float Strength = 1.f;
 
-    vec3 color = vec3(0.5f);
+    vec3 color = vec3(texture(textureSampler, vec2(texCoord.x, 1.f - texCoord.y)));
+//    vec3 color = vec3(texture(textureSampler, texCoord));
 
     vec3 KaColor = vec3(color);
     vec3 KdColor = vec3(0.8f);

@@ -5,6 +5,7 @@
 #include "Renderer.h"
 #include <fstream>
 #include "OBJLoader.h"
+#include "SOIL.h"
 
 void Renderer::setupPolygon(const std::string &filepath, const std::string &filename) {
     this->filepath = filepath;
@@ -16,8 +17,29 @@ void Renderer::setupShader(const std::string &vs, const std::string &fs) {
     compileShader(shader, vs, fs);
 }
 
+void Renderer::setupTexture() {
+    delete [] textures;
+    textures = new GLuint[shape->materials.size()];
+    glGenTextures(shape->materials.size(), textures);
+
+    for (int i=0; i<shape->materials.size(); i++) {
+        auto &material = shape->materials[i];
+        glBindTexture(GL_TEXTURE_2D, textures[i]);
+        material.map_Kd.image = SOIL_load_image(material.map_Kd.filepath, &material.map_Kd.width, &material.map_Kd.height, 0, SOIL_LOAD_RGB);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, material.map_Kd.width, material.map_Kd.height, 0, GL_RGB, GL_UNSIGNED_BYTE, material.map_Kd.image);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+}
+
 void Renderer::setupBuffer() {
     // Create the buffers for the vertices atttributes
+    delete [] mVao;
+    mVao = new GLuint[shape->geometries.size()];
     glGenVertexArrays(shape->geometries.size(), mVao);
 
     for (int i=0; i<shape->geometries.size(); i++) {
@@ -35,12 +57,12 @@ void Renderer::setupBuffer() {
         GLuint locVertNormal = glGetAttribLocation(shader->ProgramId(), "vertNormal");
         glEnableVertexAttribArray(locVertNormal);
         glVertexAttribPointer(locVertNormal, 3, GL_FLOAT, GL_FALSE, 0, 0);
-//    // vertex color
-//    glBindBuffer(GL_ARRAY_BUFFER, mVbo[2]);
-//    glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(GLfloat), &colors[0], GL_STATIC_DRAW);
-//    GLuint locVertColor = (GLuint)glGetAttribLocation(shader->ProgramId(), "vertColor");
-//    glEnableVertexAttribArray(locVertColor);
-//    glVertexAttribPointer(locVertColor, 4, GL_FLOAT, GL_FALSE, 0, 0);
+        // vertex uv
+        glBindBuffer(GL_ARRAY_BUFFER, mVbo[2]);
+        glBufferData(GL_ARRAY_BUFFER, shape->uvs.size() * sizeof(glm::vec2), &shape->uvs[0], GL_STATIC_DRAW);
+        GLuint locVertUV = (GLuint)glGetAttribLocation(shader->ProgramId(), "vertUV");
+        glEnableVertexAttribArray(locVertUV);
+        glVertexAttribPointer(locVertUV, 2, GL_FLOAT, GL_FALSE, 0, 0);
         // index
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mVbo[3]);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, shape->geometries[i].faces.size() * sizeof(GLuint),
@@ -108,7 +130,7 @@ void Renderer::updateCamera() {
 }
 
 void Renderer::render() {
-    projMatrix = glm::perspective(glm::radians(60.f), 800.f / 600, 5.f, 10000.f);
+    projMatrix = glm::perspective(glm::radians(60.f), 800.f / 600, 0.005f, 20.f);
     modelMatrix = glm::rotate(glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f)) * glm::rotate(glm::radians(180.f), glm::vec3(0.f, 0.f, 1.f)) * glm::translate(shapeOffset);
 
     shader->Activate();
@@ -120,6 +142,9 @@ void Renderer::render() {
 
     for (int i=0; i<shape->geometries.size(); i++) {
         glBindVertexArray(mVao[i]);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textures[shape->geometries[i].materialID]);
+        glUniform1i(glGetUniformLocation(shader->ProgramId(), "textureSampler"), 0);
         glDrawElements(GL_TRIANGLES, shape->geometries[i].faces.size(), GL_UNSIGNED_INT, 0);
     }
 
@@ -131,6 +156,7 @@ bool Renderer::loadPolygon() {
     loader->newShape();
     loader->load(filepath.c_str(), filename.c_str());
     shape = loader->extractShape();
+    fprintf(stdout, "Loaded %d vertices, %d faces!", shape->vertices.size(), shape->faces);
     return true;
 }
 

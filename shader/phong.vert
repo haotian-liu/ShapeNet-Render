@@ -7,8 +7,8 @@ uniform mat4 projMatrix;
 in vec3 vertPos;
 in vec3 vertNormal;
 
-in vec4 vertColor;
-out vec4 color;
+in vec2 vertUV;
+out vec2 texCoord = vertUV;
 
 out vec3 worldCoord;
 out vec3 eyeCoord;
@@ -27,6 +27,4 @@ void main() {
     gl_Position = clipPos;
 
 	Normal = normalize(mat3(viewMatrix * modelMatrix) * vertNormal);
-
-	color = vertColor;
 }
