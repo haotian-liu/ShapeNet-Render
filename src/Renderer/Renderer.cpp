@@ -25,14 +25,14 @@ void Renderer::setupBuffer() {
         glGenBuffers(sizeof(mVbo) / sizeof(GLuint), mVbo);
         // vertex coordinate
         glBindBuffer(GL_ARRAY_BUFFER, mVbo[0]);
-        glBufferData(GL_ARRAY_BUFFER, shape->vertices.size() * sizeof(GLfloat), &shape->vertices[0], GL_STATIC_DRAW);
-        GLuint locVertPos = (GLuint) glGetAttribLocation(shader->ProgramId(), "vertPos");
+        glBufferData(GL_ARRAY_BUFFER, shape->vertices.size() * sizeof(glm::vec3), &shape->vertices[0], GL_STATIC_DRAW);
+        GLuint locVertPos = glGetAttribLocation(shader->ProgramId(), "vertPos");
         glEnableVertexAttribArray(locVertPos);
         glVertexAttribPointer(locVertPos, 3, GL_FLOAT, GL_FALSE, 0, 0);
         // vertex normal
         glBindBuffer(GL_ARRAY_BUFFER, mVbo[1]);
-        glBufferData(GL_ARRAY_BUFFER, shape->normals.size() * sizeof(GLfloat), &shape->normals[0], GL_STATIC_DRAW);
-        GLuint locVertNormal = (GLuint) glGetAttribLocation(shader->ProgramId(), "vertNormal");
+        glBufferData(GL_ARRAY_BUFFER, shape->normals.size() * sizeof(glm::vec3), &shape->normals[0], GL_STATIC_DRAW);
+        GLuint locVertNormal = glGetAttribLocation(shader->ProgramId(), "vertNormal");
         glEnableVertexAttribArray(locVertNormal);
         glVertexAttribPointer(locVertNormal, 3, GL_FLOAT, GL_FALSE, 0, 0);
 //    // vertex color
@@ -108,7 +108,7 @@ void Renderer::updateCamera() {
 }
 
 void Renderer::render() {
-    projMatrix = glm::perspective(glm::radians(60.f), 800.f / 600, 1.f, 50000.f);
+    projMatrix = glm::perspective(glm::radians(60.f), 800.f / 600, 5.f, 10000.f);
     modelMatrix = glm::rotate(glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f)) * glm::rotate(glm::radians(180.f), glm::vec3(0.f, 0.f, 1.f)) * glm::translate(shapeOffset);
 
     shader->Activate();

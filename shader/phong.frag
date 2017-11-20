@@ -32,6 +32,6 @@ void main() {
     //float specular = max(pow(EdotR, Shininess), 0.f);
     float specular = 0.f;
 
-    FragColor = vec4(vec3(0.f), 1.f);
-//    FragColor = vec4(KaColor + KdColor * diffuse + KsColor * specular, 1.f);
+//    FragColor = vec4(vec3(0.f), 1.f);
+    FragColor = vec4(KaColor + KdColor * diffuse + KsColor * specular, 1.f);
 }

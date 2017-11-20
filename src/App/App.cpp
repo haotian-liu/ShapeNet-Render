@@ -7,6 +7,7 @@
 
 void App::init() {
     r = new Renderer;
+//    r->setupPolygon("assets/f16/", "f16.obj");
     r->setupPolygon("assets/", "787.obj");
     r->setupShader("shader/phong.vert", "shader/phong.frag");
     r->setupBuffer();
@@ -23,9 +24,13 @@ void App::updateViewport() {
 }
 
 void App::render() {
+
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+
     glClearColor(0.5f, 0.5f, 0.5f, 1.f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
 
     r->render();
 }

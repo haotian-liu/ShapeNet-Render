@@ -41,9 +41,9 @@ bool OBJLoader::load(const char *path, const char *fileName) {
     std::vector<unsigned int> vertexIndices, uvIndices, normalIndices;
     std::vector<GLMaterialItem> materials;
 
-    std::vector<glm::vec3> temp_vertices;
-    std::vector<glm::vec3> temp_uvs;
-    std::vector<glm::vec3> temp_normals;
+    std::vector<glm::vec3> vertices;
+    std::vector<glm::vec3> uvs;
+    std::vector<glm::vec3> normals;
 
     std::string filePath(path);
     filePath += fileName;
@@ -67,15 +67,15 @@ bool OBJLoader::load(const char *path, const char *fileName) {
         if (strcmp(lineHeader, "v") == 0) {
             glm::vec3 vertex;
             fscanf(file, "%f %f %f\n", &vertex.x, &vertex.y, &vertex.z);
-            temp_vertices.push_back(vertex);
+            vertices.push_back(vertex);
         } else if (strcmp(lineHeader, "vt") == 0) {
             glm::vec3 uv;
             fscanf(file, "%f %f %f\n", &uv.x, &uv.y, &uv.z);
-            temp_uvs.push_back(uv);
+            uvs.push_back(uv);
         } else if (strcmp(lineHeader, "vn") == 0) {
             glm::vec3 normal;
             fscanf(file, "%f %f %f\n", &normal.x, &normal.y, &normal.z);
-            temp_normals.push_back(normal);
+            normals.push_back(normal);
         } else if (strcmp(lineHeader, "f") == 0) {
             unsigned int vertexIndex[4], uvIndex[4], normalIndex[4];
             char buff[255];
@@ -120,7 +120,7 @@ bool OBJLoader::load(const char *path, const char *fileName) {
             materials.insert(materials.end(), material.get_materials().begin(), material.get_materials().end());
         } else if (strcmp(lineHeader, "usemtl") == 0) {
             if (!vertexIndices.empty()) {
-                shape_map(temp_vertices, vertice_mapper, geometries, vertexIndices, uvIndices, normalIndices);
+                shape_map(vertices, vertice_mapper, geometries, vertexIndices, uvIndices, normalIndices);
                 shape->geometries.emplace_back(materials[currentMaterialId]);
             }
 
@@ -140,7 +140,7 @@ bool OBJLoader::load(const char *path, const char *fileName) {
         }
     }
     if (!vertexIndices.empty()) {
-        shape_map(temp_vertices, vertice_mapper, geometries, vertexIndices, uvIndices, normalIndices);
+        shape_map(vertices, vertice_mapper, geometries, vertexIndices, uvIndices, normalIndices);
         shape->geometries.emplace_back(materials[currentMaterialId]);
     }
 
@@ -150,9 +150,9 @@ bool OBJLoader::load(const char *path, const char *fileName) {
         for (const auto &each : vertice_mapper[i]) {
             auto tuple = std::make_tuple(i, std::get<0>(each), std::get<1>(each));
             nindex_mapper.insert(std::make_pair(tuple, index++));
-            shape->vertices.push_back(temp_vertices[i]);
-            shape->normals.push_back(temp_normals[std::get<0>(each)]);
-            shape->uvs.push_back(temp_uvs[std::get<1>(each)]);
+            shape->vertices.push_back(vertices[i]);
+            shape->normals.push_back(normals[std::get<0>(each)]);
+            shape->uvs.push_back(uvs[std::get<1>(each)]);
         }
     }
 
@@ -190,12 +190,7 @@ bool OBJLoader::shape_map(std::vector<glm::vec3> &vertices,
         auto tuple = std::tuple<GLuint, GLuint>(normalIndices[i] - 1, uvIndices[i] - 1);
         auto &search = vertice_mapper[vertexIndices[i] - 1];
 
-        auto loc = search.end();
-
-        if (!search.empty()) {
-            loc = std::find(search.begin(), search.end(), tuple);
-        }
-//        auto loc = search.empty() ? search.end() : std::find(search.begin(), search.end(), tuple);
+        auto loc = std::find(search.begin(), search.end(), tuple);
         if (loc == search.end()) {
             search.push_back(tuple);
             faces_mapper.emplace_back(vertexIndices[i] - 1, search.size() - 1);
