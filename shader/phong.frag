@@ -6,13 +6,15 @@ in vec3 worldCoord;
 in vec3 eyeCoord;
 in vec3 Normal;
 
-in vec4 color;
+//in vec4 color;
 
 out vec4 FragColor;
 
 void main() {
     float Shininess = 1.f;
     float Strength = 1.f;
+
+    vec3 color = vec3(0.5f);
 
     vec3 KaColor = vec3(color);
     vec3 KdColor = vec3(0.8f);
@@ -30,5 +32,6 @@ void main() {
     //float specular = max(pow(EdotR, Shininess), 0.f);
     float specular = 0.f;
 
-    FragColor = vec4(KaColor + KdColor * diffuse + KsColor * specular, 1.f);
+    FragColor = vec4(vec3(0.f), 1.f);
+//    FragColor = vec4(KaColor + KdColor * diffuse + KsColor * specular, 1.f);
 }

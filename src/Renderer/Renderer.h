@@ -13,11 +13,11 @@
 
 class Renderer {
 public:
-    Renderer() : shader(new ShaderProgram), modelMatrix(1.f), mVao(0) {
+    Renderer() : shader(new ShaderProgram), modelMatrix(1.f) {
         updateCamera();
     };
 
-    void setupPolygon(const std::string &filename);
+    void setupPolygon(const std::string &filepath, const std::string &filename);
     void setupShader(const std::string &vs, const std::string &fs);
     void setupBuffer();
     void render();
@@ -35,15 +35,18 @@ private:
     bool updateNormal(int index, const glm::vec3 &Normal);
     void centralizeShape();
 
+    Shape *shape;
+
     glm::vec3 viewDirection = glm::vec3(1.f, 0.f, 0.f), lightDirection;
 
     glm::vec3 shapeOffset;
 
     ShaderProgram *shader;
-    GLuint mVao, mVbo[5];
+    GLuint mVao[10000], mVbo[5];
 
-    GLfloat Yaw = 90.f, Pitch = 0.f, Dist = 2.f;
+    GLfloat Yaw = 90.f, Pitch = 0.f, Dist = 5000.f;
 
+    std::string filepath;
     std::string filename;
     std::vector<GLfloat> verts;
     std::vector<GLfloat> norms;

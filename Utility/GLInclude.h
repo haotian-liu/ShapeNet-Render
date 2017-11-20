@@ -7,5 +7,6 @@
 
 #include <GL/glew.h>
 #include "ext.hpp"
+#include "GLGemeotryBase.h"
 
 #endif //INC_3DRECONSTRUCTION_GLINCLUDE_H
