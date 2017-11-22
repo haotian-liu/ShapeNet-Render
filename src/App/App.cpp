@@ -8,17 +8,23 @@
 void App::init() {
     r = new Renderer(glm::translate(glm::vec3(0.f, 0.5f, 0.f)));
     r->setupPolygon("assets/f16/", "f16.obj");
-//    r->setupPolygon("assets/", "787.obj");
     r->setupShader("shader/phong.vert", "shader/phong.frag");
     r->setupBuffer();
     r->setupTexture();
 
     s = new Renderer(glm::translate(glm::vec3(0.f, -0.5f, 0.f)));
-    s->setupPolygon("assets/f16/", "f16.obj");
-//    r->setupPolygon("assets/", "787.obj");
+    s->setupPolygon("assets/787/", "787.obj");
     s->setupShader("shader/phong.vert", "shader/phong.frag");
     s->setupBuffer();
     s->setupTexture();
+
+    bulb = new Renderer(glm::translate(glm::vec3(-0.5f, 0.5f, 0.f)));
+    bulb->setupPolygon("assets/bulb/", "bulb.obj");
+    bulb->setupShader("shader/phong.vert", "shader/phong.frag");
+    bulb->setupBuffer();
+    bulb->setupTexture();
+
+    bulb->setAsLight();
 }
 
 void App::setViewport(int width, int height) {
@@ -42,6 +48,7 @@ void App::render() {
 
     r->render();
     s->render();
+    bulb->render();
 }
 
 void App::idle(GLFWwindow *window) {
@@ -66,16 +73,24 @@ void App::monitorFPS(GLFWwindow *window) {
 }
 
 void App::mouseCallback(GLFWwindow *window, int button, int action, int mods) {
+    Renderer::unselectall();
     r->mouseCallback(window, button, action, mods);
     s->mouseCallback(window, button, action, mods);
+    bulb->mouseCallback(window, button, action, mods);
 }
 
 void App::cursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
-    r->cursorPosCallback(window, xpos, ypos);
-    s->cursorPosCallback(window, xpos, ypos);
+    static GLfloat lastX, lastY;
+
+    r->cursorPosCallback(window, xpos, ypos, lastX, lastY);
+    s->cursorPosCallback(window, xpos, ypos, lastX, lastY);
+    bulb->cursorPosCallback(window, xpos, ypos, lastX, lastY);
+    lastX = xpos;
+    lastY = ypos;
 }
 
 void App::keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
     r->keyCallback(window, key, scancode, action, mods);
     s->keyCallback(window, key, scancode, action, mods);
+    bulb->keyCallback(window, key, scancode, action, mods);
 }

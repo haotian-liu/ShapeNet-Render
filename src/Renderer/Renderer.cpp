@@ -10,11 +10,13 @@
 glm::vec3 Renderer::viewDirection(0.f, 0.f, 1.f), Renderer::lightDirection;
 glm::mat4 Renderer::viewTransform(1.f);
 GLfloat Renderer::Yaw = 270.f, Renderer::Pitch = 90.f, Renderer::Dist = 3.f;
+bool Renderer::childSelected;
 
 void Renderer::setupPolygon(const std::string &filepath, const std::string &filename) {
     this->filepath = filepath;
     this->filename = filename;
     loadPolygon();
+    processPolygon();
 }
 
 void Renderer::setupShader(const std::string &vs, const std::string &fs) {
@@ -88,34 +90,39 @@ void Renderer::mouseCallback(GLFWwindow *window, int button, int action, int mod
     }
 }
 
-void Renderer::cursorPosCallback(GLFWwindow *window, double currentX, double currentY) {
-    static double lastX, lastY;
+void Renderer::cursorPosCallback(GLFWwindow *window, double currentX, double currentY, double lastX, double lastY) {
     GLfloat diffX, diffY;
 
     if (LBtnDown) {
         diffX = currentX - lastX;
         diffY = currentY - lastY;
 
-        Yaw += diffX;
-        Pitch += diffY;
+        if (!childSelected) {
+            Yaw += diffX;
+            Pitch += diffY;
 
-//        viewDirection = glm::rotate(viewDirection, glm::radians(diffX), glm::vec3(1.f, 0.f, 0.f));
-//        viewDirection = glm::rotate(viewDirection, glm::radians(diffY), glm::vec3(0.f, 1.f, 0.f));
-        viewTransform = glm::rotate(glm::radians(diffX), glm::vec3(0.f, 1.f, 0.f)) * glm::rotate(glm::radians(diffY), glm::vec3(1.f, 0.f, 0.f)) * viewTransform;
-        viewDirection = viewTransform * glm::vec4(0.f, 0.f, 1.f, 1.f);
-        updateCamera();
+            viewTransform = glm::rotate(glm::radians(diffX), glm::vec3(0.f, 1.f, 0.f)) *
+                            glm::rotate(glm::radians(diffY), glm::vec3(1.f, 0.f, 0.f)) * viewTransform;
+            viewDirection = viewTransform * glm::vec4(0.f, 0.f, 1.f, 1.f);
+            updateCamera();
+        } else if (selected) {
+            glm::vec3 trans(diffX / winWidth, -diffY / winHeight, 0.f);
+            trans = glm::inverse(viewTransform) * glm::vec4(trans, 1.f);
+#ifdef DEBUG
+            printf("Selected and moving.. %f %f\n", diffX, diffY);
+            printf("Selected and moving.. %f %f %f\n", trans.x, trans.y, trans.z);
+#endif
+            modelMatrix = glm::translate(trans) * modelMatrix;
+        }
     }
-
-    lastX = currentX;
-    lastY = currentY;
 }
 
 void Renderer::keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-    if (key == GLFW_KEY_A && action != GLFW_RELEASE) {
-        viewDirection = glm::rotate(viewDirection, glm::radians(2.f), glm::vec3(0.f, 0.f, 1.f));
+    if (key == GLFW_KEY_W && action != GLFW_RELEASE) {
+        Dist *= 0.99;
     }
-    if (key == GLFW_KEY_D && action != GLFW_RELEASE) {
-        viewDirection = glm::rotate(viewDirection, glm::radians(-2.f), glm::vec3(0.f, 0.f, 1.f));
+    if (key == GLFW_KEY_S && action != GLFW_RELEASE) {
+        Dist *= 1.01;
     }
     updateCamera();
 }
@@ -148,11 +155,17 @@ void Renderer::render() {
     glUniform3fv(glGetUniformLocation(shader->ProgramId(), "LightDirection"), 1, &lightDirection[0]);
 
     for (int i=0; i<shape->geometries.size(); i++) {
+        const auto &material = shape->materials[shape->geometries[i].materialID];
         glBindVertexArray(mVao[i]);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textures[shape->geometries[i].materialID]);
+        glUniform1i(glGetUniformLocation(shader->ProgramId(), "hasTexture"), strlen(material.map_Kd.filepath) != 0);
         glUniform1i(glGetUniformLocation(shader->ProgramId(), "textureSampler"), 0);
         glUniform1i(glGetUniformLocation(shader->ProgramId(), "selected"), selected);
+        glUniform3fv(glGetUniformLocation(shader->ProgramId(), "Ka"), 1, &material.Ka[0]);
+        glUniform3fv(glGetUniformLocation(shader->ProgramId(), "Kd"), 1, &material.Kd[0]);
+        glUniform3fv(glGetUniformLocation(shader->ProgramId(), "Ks"), 1, &material.Ks[0]);
+        glUniform1f(glGetUniformLocation(shader->ProgramId(), "Ns"), material.Ns);
         glDrawElements(GL_TRIANGLES, shape->geometries[i].faces.size(), GL_UNSIGNED_INT, 0);
     }
 
@@ -164,28 +177,34 @@ bool Renderer::loadPolygon() {
     loader->newShape();
     loader->load(filepath.c_str(), filename.c_str());
     shape = loader->extractShape();
-    fprintf(stdout, "Loaded %d vertices, %d faces!", shape->vertices.size(), shape->faces);
+    fprintf(stdout, "Loaded %d vertices, %d faces!\n", shape->vertices.size(), shape->faces);
     return true;
 }
 
-/*bool Renderer::processPolygon() {
+bool Renderer::processPolygon() {
+//    centralizeShape();
+    normalizeShape();
     return true;
-    centralizeShape();
-    if (norms.size() == 0) {
-        generateNormals();
+}
+
+void Renderer::normalizeShape() {
+    GLfloat maxVector = 0.00000001f;
+    for (const auto &vert : shape->vertices) {
+        if (glm::length(vert) > maxVector) {
+            maxVector = glm::length(vert);
+        }
     }
-    if (colors.size() == 0) {
-        colors.resize(verts.size() / 3 * 4, 0.2f);
+    for (auto &vert : shape->vertices) {
+        vert /= maxVector;
     }
-    return true;
 }
 
 void Renderer::centralizeShape() {
     glm::vec3 Max, Min;
-    if (verts.size() == 0) { return; }
-    Max = Min = getVertVector(0);
-    for (int i=1; i<verts.size() / 3; i++) {
-        auto v = getVertVector(i);
+    if (shape->vertices.empty()) { return; }
+    Max = Min = shape->vertices[0];
+    for (int i=1; i<shape->vertices.size(); i++) {
+        const auto &v = shape->vertices[i];
         if (Max.x < v.x) { Max.x = v.x; }
         if (Max.y < v.y) { Max.y = v.y; }
         if (Max.z < v.z) { Max.z = v.z; }
@@ -196,7 +215,7 @@ void Renderer::centralizeShape() {
     shapeOffset = -(Max + Min) / 2;
 }
 
-glm::vec3 Renderer::getVertVector(int index) {
+/* glm::vec3 Renderer::getVertVector(int index) {
     return glm::vec3(verts[index], verts[index + 1], verts[index + 2]);
 }
 
@@ -284,6 +303,7 @@ void Renderer::testIntersection(double x, double y) {
 
             if (inTriangle(pp, a1, a2, a3)) {
                 selected = true;
+                childSelected = true;
             }
         }
     }

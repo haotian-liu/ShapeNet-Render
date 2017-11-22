@@ -26,7 +26,7 @@ private:
     void monitorFPS(GLFWwindow *window);
 
     std::string windowTitle;
-    Renderer *r, *s;
+    Renderer *r, *s, *bulb;
     int winWidth, winHeight;
 };
 
