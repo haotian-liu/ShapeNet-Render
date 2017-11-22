@@ -19,8 +19,8 @@ void main() {
 //    vec3 color = vec3(texture(textureSampler, texCoord));
 
     vec3 KaColor = vec3(color);
-    vec3 KdColor = vec3(0.8f);
-    vec3 KsColor = vec3(0.8f);
+    vec3 KdColor = vec3(0.3f);
+    vec3 KsColor = vec3(0.3f);
 
     vec3 N = Normal;
     vec3 L = normalize(LightDirection - worldCoord);
@@ -30,11 +30,12 @@ void main() {
     float NdotL = abs(dot(N, L));
     float EdotR = dot(-E, R);
 
-//    float diffuse = max(NdotL, 0.f);
-    float diffuse = 0.f;
-    //float specular = max(pow(EdotR, Shininess), 0.f);
-    float specular = 0.f;
+    float diffuse = max(NdotL, 0.f);
+//    float diffuse = 0.f;
+    float specular = max(pow(EdotR, Shininess), 0.f);
+//    float specular = 0.f;
 
-//    FragColor = vec4(vec3(0.f), 1.f);
-    FragColor = selected ? vec4(vec3(KaColor.x, KaColor.yz + vec2(0.5f)), 1.f) : vec4(KaColor + KdColor * diffuse + KsColor * specular, 1.f);
+    vec3 combined = vec3(KaColor + KdColor * diffuse + KsColor * specular);
+
+    FragColor = vec4(selected ? vec3(combined.x, combined.yz + vec2(0.3f)) : combined, 1.f);
 }
