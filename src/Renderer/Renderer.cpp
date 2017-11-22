@@ -7,6 +7,10 @@
 #include "OBJLoader.h"
 #include "SOIL.h"
 
+glm::vec3 Renderer::viewDirection(0.f, 0.f, 1.f), Renderer::lightDirection;
+glm::mat4 Renderer::viewTransform(1.f);
+GLfloat Renderer::Yaw = 270.f, Renderer::Pitch = 90.f, Renderer::Dist = 3.f;
+
 void Renderer::setupPolygon(const std::string &filepath, const std::string &filename) {
     this->filepath = filepath;
     this->filename = filename;
@@ -60,7 +64,7 @@ void Renderer::setupBuffer() {
         // vertex uv
         glBindBuffer(GL_ARRAY_BUFFER, mVbo[2]);
         glBufferData(GL_ARRAY_BUFFER, shape->uvs.size() * sizeof(glm::vec2), &shape->uvs[0], GL_STATIC_DRAW);
-        GLuint locVertUV = (GLuint)glGetAttribLocation(shader->ProgramId(), "vertUV");
+        GLuint locVertUV = glGetAttribLocation(shader->ProgramId(), "vertUV");
         glEnableVertexAttribArray(locVertUV);
         glVertexAttribPointer(locVertUV, 2, GL_FLOAT, GL_FALSE, 0, 0);
         // index
@@ -75,6 +79,9 @@ void Renderer::mouseCallback(GLFWwindow *window, int button, int action, int mod
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
         if (GLFW_PRESS == action) {
             LBtnDown = true;
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+            testIntersection(xpos, ypos);
         } else if (GLFW_RELEASE == action) {
             LBtnDown = false;
         }
@@ -92,9 +99,10 @@ void Renderer::cursorPosCallback(GLFWwindow *window, double currentX, double cur
         Yaw += diffX;
         Pitch += diffY;
 
-        viewDirection = glm::rotate(viewDirection, glm::radians(diffX), glm::vec3(1.f, 0.f, 0.f));
-        viewDirection = glm::rotate(viewDirection, glm::radians(diffY), glm::vec3(0.f, 1.f, 0.f));
-
+//        viewDirection = glm::rotate(viewDirection, glm::radians(diffX), glm::vec3(1.f, 0.f, 0.f));
+//        viewDirection = glm::rotate(viewDirection, glm::radians(diffY), glm::vec3(0.f, 1.f, 0.f));
+        viewTransform = glm::rotate(glm::radians(diffX), glm::vec3(0.f, 1.f, 0.f)) * glm::rotate(glm::radians(diffY), glm::vec3(1.f, 0.f, 0.f)) * viewTransform;
+        viewDirection = viewTransform * glm::vec4(0.f, 0.f, 1.f, 1.f);
         updateCamera();
     }
 
@@ -113,11 +121,11 @@ void Renderer::keyCallback(GLFWwindow *window, int key, int scancode, int action
 }
 
 void Renderer::updateCamera() {
-    viewDirection = glm::vec3(
-            sin(glm::radians(Yaw)) * cos(glm::radians(Pitch)),
-            sin(glm::radians(Yaw)) * sin(glm::radians(Pitch)),
-            cos(glm::radians(Yaw))
-    );
+//    viewDirection = glm::vec3(
+//            sin(glm::radians(Yaw)) * cos(glm::radians(Pitch)),
+//            sin(glm::radians(Yaw)) * sin(glm::radians(Pitch)),
+//            cos(glm::radians(Yaw))
+//    );
 
     viewDirection = glm::normalize(viewDirection);
     lightDirection = viewDirection;
@@ -130,8 +138,7 @@ void Renderer::updateCamera() {
 }
 
 void Renderer::render() {
-    projMatrix = glm::perspective(glm::radians(60.f), 800.f / 600, 0.005f, 20.f);
-    modelMatrix = glm::rotate(glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f)) * glm::rotate(glm::radians(180.f), glm::vec3(0.f, 0.f, 1.f)) * glm::translate(shapeOffset);
+    projMatrix = glm::perspective(glm::radians(fovy), ratio, near, far);
 
     shader->Activate();
     glUniformMatrix4fv(glGetUniformLocation(shader->ProgramId(), "viewMatrix"), 1, GL_FALSE, &viewMatrix[0][0]);
@@ -145,6 +152,7 @@ void Renderer::render() {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textures[shape->geometries[i].materialID]);
         glUniform1i(glGetUniformLocation(shader->ProgramId(), "textureSampler"), 0);
+        glUniform1i(glGetUniformLocation(shader->ProgramId(), "selected"), selected);
         glDrawElements(GL_TRIANGLES, shape->geometries[i].faces.size(), GL_UNSIGNED_INT, 0);
     }
 
@@ -160,7 +168,7 @@ bool Renderer::loadPolygon() {
     return true;
 }
 
-bool Renderer::processPolygon() {
+/*bool Renderer::processPolygon() {
     return true;
     centralizeShape();
     if (norms.size() == 0) {
@@ -217,7 +225,7 @@ bool Renderer::generateNormals() {
         updateNormal(faces[i + 2] * 3, Normal);
     }
     return true;
-}
+}*/
 
 bool Renderer::compileShader(ShaderProgram *shader, const std::string &vs, const std::string &fs) {
     auto VertexShader = new Shader(Shader::Shader_Vertex);
@@ -236,4 +244,47 @@ bool Renderer::compileShader(ShaderProgram *shader, const std::string &vs, const
     shader->AddShader(FragmentShader, true);
     //Link the program.
     return shader->Link();
+}
+
+GLfloat Renderer::tdsign(glm::vec2 p1, glm::vec2 p2, glm::vec2 p3) {
+    return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+}
+
+bool Renderer::inTriangle(glm::vec2 pt, glm::vec2 v1, glm::vec2 v2, glm::vec2 v3) {
+    bool b1, b2, b3;
+
+    b1 = tdsign(pt, v1, v2) < 0.0f;
+    b2 = tdsign(pt, v2, v3) < 0.0f;
+    b3 = tdsign(pt, v3, v1) < 0.0f;
+
+    return ((b1 == b2) && (b2 == b3));
+}
+
+void Renderer::testIntersection(double x, double y) {
+    selected = false;
+
+    double lx = (x / winWidth - 0.5) * 2;
+    double ly = (0.5 - y / winHeight) * 2;
+
+    glm::vec2 pp(lx, ly);
+
+    glm::mat4 MVPMatrix = projMatrix * viewMatrix * modelMatrix;
+
+    for (const auto &geometry : shape->geometries) {
+        for (int i=0; i<geometry.faces.size(); i+=3) {
+            glm::vec4 v1(shape->vertices[geometry.faces[i]], 1.f);
+            glm::vec4 v2(shape->vertices[geometry.faces[i+1]], 1.f);
+            glm::vec4 v3(shape->vertices[geometry.faces[i+2]], 1.f);
+
+            v1 = MVPMatrix * v1; v1 /= v1.w;
+            v2 = MVPMatrix * v2; v2 /= v2.w;
+            v3 = MVPMatrix * v3; v3 /= v3.w;
+
+            glm::vec2 a1(v1), a2(v2), a3(v3);
+
+            if (inTriangle(pp, a1, a2, a3)) {
+                selected = true;
+            }
+        }
+    }
 }

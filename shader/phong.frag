@@ -1,5 +1,6 @@
 #version 330
 
+uniform bool selected;
 uniform vec3 LightDirection;
 uniform sampler2D textureSampler;
 
@@ -29,10 +30,11 @@ void main() {
     float NdotL = abs(dot(N, L));
     float EdotR = dot(-E, R);
 
-    float diffuse = max(NdotL, 0.f);
+//    float diffuse = max(NdotL, 0.f);
+    float diffuse = 0.f;
     //float specular = max(pow(EdotR, Shininess), 0.f);
     float specular = 0.f;
 
 //    FragColor = vec4(vec3(0.f), 1.f);
-    FragColor = vec4(KaColor + KdColor * diffuse + KsColor * specular, 1.f);
+    FragColor = selected ? vec4(vec3(KaColor.x, KaColor.yz + vec2(0.5f)), 1.f) : vec4(KaColor + KdColor * diffuse + KsColor * specular, 1.f);
 }

@@ -6,12 +6,19 @@
 #include <chrono>
 
 void App::init() {
-    r = new Renderer;
+    r = new Renderer(glm::translate(glm::vec3(0.f, 0.5f, 0.f)));
     r->setupPolygon("assets/f16/", "f16.obj");
 //    r->setupPolygon("assets/", "787.obj");
     r->setupShader("shader/phong.vert", "shader/phong.frag");
     r->setupBuffer();
     r->setupTexture();
+
+    s = new Renderer(glm::translate(glm::vec3(0.f, -0.5f, 0.f)));
+    s->setupPolygon("assets/f16/", "f16.obj");
+//    r->setupPolygon("assets/", "787.obj");
+    s->setupShader("shader/phong.vert", "shader/phong.frag");
+    s->setupBuffer();
+    s->setupTexture();
 }
 
 void App::setViewport(int width, int height) {
@@ -34,6 +41,7 @@ void App::render() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     r->render();
+    s->render();
 }
 
 void App::idle(GLFWwindow *window) {
@@ -59,12 +67,15 @@ void App::monitorFPS(GLFWwindow *window) {
 
 void App::mouseCallback(GLFWwindow *window, int button, int action, int mods) {
     r->mouseCallback(window, button, action, mods);
+    s->mouseCallback(window, button, action, mods);
 }
 
 void App::cursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
     r->cursorPosCallback(window, xpos, ypos);
+    s->cursorPosCallback(window, xpos, ypos);
 }
 
 void App::keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
     r->keyCallback(window, key, scancode, action, mods);
+    s->keyCallback(window, key, scancode, action, mods);
 }
