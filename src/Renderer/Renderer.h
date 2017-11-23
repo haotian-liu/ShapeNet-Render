@@ -54,6 +54,9 @@ private:
     static glm::vec3 viewDirection, lightDirection;
     static glm::mat4 viewTransform;
 
+    constexpr static GLfloat MaxDepth = 9999999999.f;
+    GLfloat maxDepth;
+
     glm::vec3 shapeOffset;
 
     ShaderProgram *shader;

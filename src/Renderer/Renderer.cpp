@@ -108,7 +108,9 @@ void Renderer::cursorPosCallback(GLFWwindow *window, double currentX, double cur
             viewDirection = glm::mat3(viewTransform) * glm::vec3(0.f, 0.f, 1.f);
             updateCamera();
         } else if (selected) {
-            glm::vec3 trans(diffX / winWidth, -diffY / winHeight, 0.f);
+            testIntersection(currentX, currentY);
+            GLfloat makesRatio = far / (far - maxDepth) * 4;
+            glm::vec3 trans(makesRatio * diffX / winWidth, makesRatio * -diffY / winHeight, 0.f);
             trans = viewTransform * glm::vec4(trans, 1.f);
 #ifdef DEBUG
             printf("Selected and moving.. %f %f\n", diffX, diffY);
@@ -287,9 +289,11 @@ void Renderer::testIntersection(double x, double y) {
     double lx = (x / winWidth - 0.5) * 2;
     double ly = (0.5 - y / winHeight) * 2;
 
-    glm::vec2 pp(lx, ly);
+    glm::vec4 pp(lx, ly, 0.f, 0.f);
 
     glm::mat4 MVPMatrix = projMatrix * viewMatrix * modelMatrix;
+
+    maxDepth = -MaxDepth;
 
     for (const auto &geometry : shape->geometries) {
         for (int i=0; i<geometry.faces.size(); i+=3) {
@@ -306,6 +310,15 @@ void Renderer::testIntersection(double x, double y) {
             if (inTriangle(pp, a1, a2, a3)) {
                 selected = true;
                 childSelected = true;
+
+                glm::vec4 va(v1-v2), vb(v3-v2), vp(pp-v2);
+                GLfloat lambda, uuu;
+                uuu = (vp.y*va.x-vp.x*va.y)/(vb.y*va.x-vb.x*va.y);
+                lambda = (vp.x-uuu*vb.x)/va.x;
+                GLfloat d = (v2-(lambda*va+uuu*vb)).z;
+                if (!isnan(d) && d > maxDepth) {
+                    maxDepth = d;
+                }
             }
         }
     }
