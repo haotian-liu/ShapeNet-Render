@@ -10,7 +10,7 @@
 glm::vec3 Renderer::viewDirection(0.f, 0.f, 1.f), Renderer::lightDirection(0.f, 0.f, 1.f);
 glm::mat4 Renderer::viewTransform(1.f);
 bool Renderer::hasLight = false;
-GLfloat Renderer::Yaw = 270.f, Renderer::Pitch = 90.f, Renderer::Dist = 3.f;
+GLfloat Renderer::Yaw = 270.f, Renderer::Pitch = 90.f, Renderer::Dist = 3.f, Renderer::lightDistance = 1.f;
 bool Renderer::childSelected;
 
 void Renderer::setupPolygon(const std::string &filepath, const std::string &filename) {
@@ -128,7 +128,8 @@ void Renderer::cursorPosCallback(GLFWwindow *window, double currentX, double cur
             printf("Selected and moving.. %f %f %f\n", trans.x, trans.y, trans.z);
 #endif
             modelMatrix = glm::translate(trans) * modelMatrix;
-            lightDirection = translation;
+            lightDirection = glm::normalize(translation);
+            lightDistance = glm::length(translation);
         }
     }
     if (RBtnDown) {
@@ -184,7 +185,8 @@ void Renderer::render() {
     glUniformMatrix4fv(glGetUniformLocation(shader->ProgramId(), "modelMatrix"), 1, GL_FALSE, &modelMatrix[0][0]);
     glUniformMatrix4fv(glGetUniformLocation(shader->ProgramId(), "projMatrix"), 1, GL_FALSE, &projMatrix[0][0]);
 
-    glUniform3fv(glGetUniformLocation(shader->ProgramId(), "LightDirection"), 1, &lightDirection[0]);
+    glUniform3fv(glGetUniformLocation(shader->ProgramId(), "lightDirection"), 1, &lightDirection[0]);
+    glUniform1f(glGetUniformLocation(shader->ProgramId(), "lightDistance"), lightDistance);
 
     for (int i=0; i<shape->geometries.size(); i++) {
         const auto &material = shape->materials[shape->geometries[i].materialID];

@@ -18,7 +18,7 @@ void App::init() {
     s->setupBuffer();
     s->setupTexture();
 
-    bulb = new Renderer(glm::vec3(-0.5f, 0.5f, 0.f));
+    bulb = new Renderer(glm::vec3(-0.5f, -0.5f, 0.f), glm::scale(glm::vec3(0.5f)));
     bulb->setupPolygon("assets/bulb/", "bulb.obj");
     bulb->setupShader("shader/phong.vert", "shader/phong.frag");
     bulb->setupBuffer();

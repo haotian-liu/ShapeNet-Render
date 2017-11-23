@@ -1,7 +1,8 @@
 #version 330
 
 uniform bool selected;
-uniform vec3 LightDirection;
+uniform vec3 lightDirection;
+uniform float lightDistance;
 uniform sampler2D textureSampler;
 uniform bool hasTexture;
 
@@ -28,15 +29,15 @@ void main() {
     vec3 KsColor = Ks;
 
     vec3 N = Normal;
-    vec3 L = normalize(LightDirection - worldCoord);
+    vec3 L = normalize(lightDirection - worldCoord);
     vec3 R = reflect(-L, N);
     vec3 E = normalize(eyeCoord);
 
     float NdotL = abs(dot(N, L));
     float EdotR = dot(-E, R);
 
-    float diffuse = max(NdotL, 0.f);
-    float specular = max(pow(EdotR, Shininess), 0.f);
+    float diffuse = max(NdotL, 0.f) / lightDistance;
+    float specular = max(pow(EdotR, Shininess), 0.f) / lightDistance;
 
     vec3 combined = vec3(KaColor + KdColor * diffuse + KsColor * specular);
 

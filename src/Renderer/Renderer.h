@@ -13,14 +13,19 @@
 
 class Renderer {
 public:
-    Renderer(const glm::vec3 &trans) : shader(new ShaderProgram), translation(trans), mVao(nullptr), textures(nullptr) {
+    Renderer(const glm::vec3 &trans, const glm::mat4 transformation = glm::mat4(1.f)) : shader(new ShaderProgram), translation(trans), mVao(nullptr), textures(nullptr) {
         selected = false;
         isLight = false;
-        modelMatrix = glm::translate(trans);
+        modelMatrix = transformation * glm::translate(trans);
         updateCamera();
     };
 
-    void setAsLight() { hasLight = true;  isLight = true; lightDirection = translation; }
+    void setAsLight() {
+        hasLight = true;
+        isLight = true;
+        lightDirection = glm::normalize(translation);
+        lightDistance = glm::length(translation);
+    }
     void setupPolygon(const std::string &filepath, const std::string &filename);
     void setupShader(const std::string &vs, const std::string &fs);
     void setupBuffer();
@@ -56,6 +61,7 @@ private:
 
     static glm::vec3 viewDirection, lightDirection;
     static glm::mat4 viewTransform;
+    static GLfloat lightDistance;
 
     constexpr static GLfloat MaxDepth = 9999999999.f;
     GLfloat maxDepth;
