@@ -38,6 +38,7 @@ private:
     GLfloat tdsign(glm::vec2 p1, glm::vec2 p2, glm::vec2 p3);
     bool inTriangle(glm::vec2 pt, glm::vec2 v1, glm::vec2 v2, glm::vec2 v3);
     bool processPolygon();
+    GLfloat calculateDepth(const glm::mat3 &triangle, glm::vec2 p);
 //    bool generateNormals();
 //    glm::vec3 getVertVector(int index);
 //    bool updateNormal(int index, const glm::vec3 &Normal);
@@ -56,6 +57,7 @@ private:
 
     constexpr static GLfloat MaxDepth = 9999999999.f;
     GLfloat maxDepth;
+    glm::mat3 lastMaxTriangle;
 
     glm::vec3 shapeOffset;
 

@@ -108,7 +108,7 @@ void Renderer::cursorPosCallback(GLFWwindow *window, double currentX, double cur
             viewDirection = glm::mat3(viewTransform) * glm::vec3(0.f, 0.f, 1.f);
             updateCamera();
         } else if (selected) {
-            testIntersection(currentX, currentY);
+            maxDepth = calculateDepth(lastMaxTriangle, glm::vec2(currentX, currentY));
             GLfloat makesRatio = far / (far - maxDepth) * 4;
             glm::vec3 trans(makesRatio * diffX / winWidth, makesRatio * -diffY / winHeight, 0.f);
             trans = viewTransform * glm::vec4(trans, 1.f);
@@ -278,9 +278,11 @@ bool Renderer::inTriangle(glm::vec2 pt, glm::vec2 v1, glm::vec2 v2, glm::vec2 v3
 
     b1 = tdsign(pt, v1, v2) < 0.0f;
     b2 = tdsign(pt, v2, v3) < 0.0f;
+    if (b1 != b2) return false;
     b3 = tdsign(pt, v3, v1) < 0.0f;
 
-    return ((b1 == b2) && (b2 == b3));
+    return b2 == b3;
+//    return ((b1 == b2) && (b2 == b3));
 }
 
 void Renderer::testIntersection(double x, double y) {
@@ -289,7 +291,7 @@ void Renderer::testIntersection(double x, double y) {
     double lx = (x / winWidth - 0.5) * 2;
     double ly = (0.5 - y / winHeight) * 2;
 
-    glm::vec4 pp(lx, ly, 0.f, 0.f);
+    glm::vec2 pp(lx, ly);
 
     glm::mat4 MVPMatrix = projMatrix * viewMatrix * modelMatrix;
 
@@ -311,15 +313,24 @@ void Renderer::testIntersection(double x, double y) {
                 selected = true;
                 childSelected = true;
 
-                glm::vec4 va(v1-v2), vb(v3-v2), vp(pp-v2);
-                GLfloat lambda, uuu;
-                uuu = (vp.y*va.x-vp.x*va.y)/(vb.y*va.x-vb.x*va.y);
-                lambda = (vp.x-uuu*vb.x)/va.x;
-                GLfloat d = (v2-(lambda*va+uuu*vb)).z;
+                glm::mat3 triangle = glm::mat3(glm::vec3(v1), glm::vec3(v2), glm::vec3(v3));
+                GLfloat d = calculateDepth(triangle, pp);
+
                 if (!isnan(d) && d > maxDepth) {
                     maxDepth = d;
+                    lastMaxTriangle = triangle;
                 }
             }
         }
     }
+}
+
+GLfloat Renderer::calculateDepth(const glm::mat3 &triangle, glm::vec2 p) {
+    glm::vec3 v1(triangle[0]), v2(triangle[1]), v3(triangle[2]);
+    glm::vec3 pp(p, 0.f);
+    glm::vec3 va(v1-v2), vb(v3-v2), vp(pp-v2);
+    GLfloat lambda, uuu;
+    uuu = (vp.y*va.x-vp.x*va.y)/(vb.y*va.x-vb.x*va.y);
+    lambda = (vp.x-uuu*vb.x)/va.x;
+    return (v2-(lambda*va+uuu*vb)).z;
 }
