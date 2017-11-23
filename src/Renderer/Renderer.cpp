@@ -101,13 +101,15 @@ void Renderer::cursorPosCallback(GLFWwindow *window, double currentX, double cur
             Yaw += diffX;
             Pitch += diffY;
 
-            viewTransform = glm::rotate(glm::radians(diffX), glm::vec3(0.f, 1.f, 0.f)) *
-                            glm::rotate(glm::radians(diffY), glm::vec3(1.f, 0.f, 0.f)) * viewTransform;
-            viewDirection = viewTransform * glm::vec4(0.f, 0.f, 1.f, 1.f);
+            viewTransform =
+                            glm::rotate(glm::radians(diffX), glm::vec3(viewTransform * glm::vec4(0.f, 1.f, 0.f, 1.f))) *
+                            glm::rotate(glm::radians(diffY), glm::vec3(viewTransform * glm::vec4(1.f, 0.f, 0.f, 1.f))) *
+                            viewTransform;
+            viewDirection = glm::mat3(viewTransform) * glm::vec3(0.f, 0.f, 1.f);
             updateCamera();
         } else if (selected) {
             glm::vec3 trans(diffX / winWidth, -diffY / winHeight, 0.f);
-            trans = glm::inverse(viewTransform) * glm::vec4(trans, 1.f);
+            trans = viewTransform * glm::vec4(trans, 1.f);
 #ifdef DEBUG
             printf("Selected and moving.. %f %f\n", diffX, diffY);
             printf("Selected and moving.. %f %f %f\n", trans.x, trans.y, trans.z);
@@ -140,7 +142,7 @@ void Renderer::updateCamera() {
     viewMatrix = glm::lookAt(
             viewDirection * Dist,
             glm::vec3(0.f, 0.f, 0.f),
-            glm::vec3(0.f, 1.f, 0.f)
+            glm::mat3(viewTransform) * glm::vec3(0.f, 1.f, 0.f)
     );
 }
 
