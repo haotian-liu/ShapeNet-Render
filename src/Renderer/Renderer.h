@@ -13,13 +13,14 @@
 
 class Renderer {
 public:
-    Renderer(const glm::mat4 &modelMatrix) : shader(new ShaderProgram), modelMatrix(modelMatrix), mVao(nullptr), textures(nullptr) {
+    Renderer(const glm::vec3 &trans) : shader(new ShaderProgram), translation(trans), mVao(nullptr), textures(nullptr) {
         selected = false;
         isLight = false;
+        modelMatrix = glm::translate(trans);
         updateCamera();
     };
 
-    void setAsLight() { isLight = true; }
+    void setAsLight() { hasLight = true;  isLight = true; lightDirection = translation; }
     void setupPolygon(const std::string &filepath, const std::string &filename);
     void setupShader(const std::string &vs, const std::string &fs);
     void setupBuffer();
@@ -47,6 +48,7 @@ private:
 
     static constexpr GLfloat winWidth = 800.f, winHeight = 600.f, ratio = winWidth / winHeight;
     static constexpr GLfloat fovy = 60.f, near = 0.001f, far = 50.f;
+    static bool hasLight;
 
     Shape *shape;
 
@@ -59,7 +61,7 @@ private:
     GLfloat maxDepth;
     glm::mat3 lastMaxTriangle;
 
-    glm::vec3 shapeOffset;
+    glm::vec3 shapeOffset, translation;
 
     ShaderProgram *shader;
     GLuint *mVao, mVbo[5];

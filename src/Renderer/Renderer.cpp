@@ -7,8 +7,9 @@
 #include "OBJLoader.h"
 #include "SOIL.h"
 
-glm::vec3 Renderer::viewDirection(0.f, 0.f, 1.f), Renderer::lightDirection;
+glm::vec3 Renderer::viewDirection(0.f, 0.f, 1.f), Renderer::lightDirection(0.f, 0.f, 1.f);
 glm::mat4 Renderer::viewTransform(1.f);
+bool Renderer::hasLight = false;
 GLfloat Renderer::Yaw = 270.f, Renderer::Pitch = 90.f, Renderer::Dist = 3.f;
 bool Renderer::childSelected;
 
@@ -88,15 +89,24 @@ void Renderer::mouseCallback(GLFWwindow *window, int button, int action, int mod
             LBtnDown = false;
         }
     }
+    if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+        if (GLFW_PRESS == action) {
+            RBtnDown = true;
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+            testIntersection(xpos, ypos);
+        } else if (GLFW_RELEASE == action) {
+            RBtnDown = false;
+        }
+    }
 }
 
 void Renderer::cursorPosCallback(GLFWwindow *window, double currentX, double currentY, double lastX, double lastY) {
     GLfloat diffX, diffY;
+    diffX = currentX - lastX;
+    diffY = currentY - lastY;
 
     if (LBtnDown) {
-        diffX = currentX - lastX;
-        diffY = currentY - lastY;
-
         if (!childSelected) {
             Yaw += diffX;
             Pitch += diffY;
@@ -111,6 +121,22 @@ void Renderer::cursorPosCallback(GLFWwindow *window, double currentX, double cur
             maxDepth = calculateDepth(lastMaxTriangle, glm::vec2(currentX, currentY));
             GLfloat makesRatio = far / (far - maxDepth) * 4;
             glm::vec3 trans(makesRatio * diffX / winWidth, makesRatio * -diffY / winHeight, 0.f);
+            trans = viewTransform * glm::vec4(trans, 1.f);
+            translation += trans;
+#ifdef DEBUG
+            printf("Selected and moving.. %f %f\n", diffX, diffY);
+            printf("Selected and moving.. %f %f %f\n", trans.x, trans.y, trans.z);
+#endif
+            modelMatrix = glm::translate(trans) * modelMatrix;
+            lightDirection = translation;
+        }
+    }
+    if (RBtnDown) {
+        if (selected) {
+            maxDepth = calculateDepth(lastMaxTriangle, glm::vec2(currentX, currentY));
+            GLfloat makesRatio = far / (far - maxDepth) * 4;
+            GLfloat diff = (signbit(diffX) ? -1 : 1) * sqrt(diffX * diffX / winWidth / winWidth + diffY * diffY / winHeight / winHeight);
+            glm::vec3 trans(0.f, 0.f, makesRatio * diff);
             trans = viewTransform * glm::vec4(trans, 1.f);
 #ifdef DEBUG
             printf("Selected and moving.. %f %f\n", diffX, diffY);
@@ -139,7 +165,9 @@ void Renderer::updateCamera() {
 //    );
 
     viewDirection = glm::normalize(viewDirection);
-    lightDirection = viewDirection;
+    if (!hasLight) {
+        lightDirection = viewDirection;
+    }
 
     viewMatrix = glm::lookAt(
             viewDirection * Dist,

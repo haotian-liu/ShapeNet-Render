@@ -6,19 +6,19 @@
 #include <chrono>
 
 void App::init() {
-    r = new Renderer(glm::translate(glm::vec3(0.f, 0.5f, 0.f)));
+    r = new Renderer(glm::vec3(0.f, 0.5f, 0.f));
     r->setupPolygon("assets/f16/", "f16.obj");
     r->setupShader("shader/phong.vert", "shader/phong.frag");
     r->setupBuffer();
     r->setupTexture();
 
-    s = new Renderer(glm::translate(glm::vec3(0.f, -0.5f, 0.f)));
+    s = new Renderer(glm::vec3(0.f, -0.5f, 0.f));
     s->setupPolygon("assets/787/", "787.obj");
     s->setupShader("shader/phong.vert", "shader/phong.frag");
     s->setupBuffer();
     s->setupTexture();
 
-    bulb = new Renderer(glm::translate(glm::vec3(-0.5f, 0.5f, 0.f)));
+    bulb = new Renderer(glm::vec3(-0.5f, 0.5f, 0.f));
     bulb->setupPolygon("assets/bulb/", "bulb.obj");
     bulb->setupShader("shader/phong.vert", "shader/phong.frag");
     bulb->setupBuffer();
