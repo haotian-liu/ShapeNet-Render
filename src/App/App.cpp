@@ -13,7 +13,7 @@ void App::init() {
     r->setupTexture();
 
     s = new Renderer(glm::vec3(0.f, -0.5f, 0.f));
-    s->setupPolygon("assets/787/", "787.obj");
+    s->setupPolygon("assets/aircraft/", "aircraft.obj");
     s->setupShader("shader/phong.vert", "shader/phong.frag");
     s->setupBuffer();
     s->setupTexture();
