@@ -128,8 +128,11 @@ void Renderer::cursorPosCallback(GLFWwindow *window, double currentX, double cur
             printf("Selected and moving.. %f %f %f\n", trans.x, trans.y, trans.z);
 #endif
             modelMatrix = glm::translate(trans) * modelMatrix;
-            lightDirection = glm::normalize(translation);
-            lightDistance = glm::length(translation);
+
+            if (isLight) {
+                lightDirection = glm::normalize(translation);
+                lightDistance = glm::length(translation);
+            }
         }
     }
     if (RBtnDown) {
