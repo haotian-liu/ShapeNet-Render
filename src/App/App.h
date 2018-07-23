@@ -12,7 +12,7 @@
 
 class App {
 public:
-    void init();
+    void init(const std::string &path, const std::string &file);
     void setTitle(const std::string &title) { windowTitle = title; }
     void setViewport(int width, int height);
     void updateViewport();
@@ -26,7 +26,7 @@ private:
     void monitorFPS(GLFWwindow *window);
 
     std::string windowTitle;
-    Renderer *r, *s, *bulb;
+    Renderer *r;
     int winWidth, winHeight;
 };
 

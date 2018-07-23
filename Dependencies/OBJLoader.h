@@ -78,6 +78,7 @@ bool OBJLoader::load(const char *path, const char *fileName) {
             normals.push_back(normal);
         } else if (strcmp(lineHeader, "f") == 0) {
             unsigned int vertexIndex[4], uvIndex[4], normalIndex[4];
+            bool flag = true;
             char buff[255];
             fgets(buff, 250, file);
             int matches = sscanf(buff, "%d/%d/%d %d/%d/%d %d/%d/%d %d/%d/%d\n", &vertexIndex[0], &uvIndex[0],
@@ -88,8 +89,13 @@ bool OBJLoader::load(const char *path, const char *fileName) {
                                  &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2],
                                  &normalIndex[2]);
                 if (matches != 9) {
-                    fprintf(stderr, "This is not standard obj our program can process!");
-                    return false;
+                    matches = sscanf(buff, "%d//%d %d//%d %d//%d\n", &vertexIndex[0], &normalIndex[0],
+                            &vertexIndex[1], &normalIndex[1], &vertexIndex[2], &normalIndex[2]);
+                    flag = false;
+                    if (matches != 6) {
+                        fprintf(stderr, "This is not standard obj our program can process!");
+                        return false;
+                    }
                 }
             }
             vertexIndices.push_back(vertexIndex[0]);
@@ -98,9 +104,15 @@ bool OBJLoader::load(const char *path, const char *fileName) {
             normalIndices.push_back(normalIndex[0]);
             normalIndices.push_back(normalIndex[1]);
             normalIndices.push_back(normalIndex[2]);
-            uvIndices.push_back(uvIndex[0]);
-            uvIndices.push_back(uvIndex[1]);
-            uvIndices.push_back(uvIndex[2]);
+            if (flag) {
+                uvIndices.push_back(uvIndex[0]);
+                uvIndices.push_back(uvIndex[1]);
+                uvIndices.push_back(uvIndex[2]);
+            } else {
+                uvIndices.push_back(1);
+                uvIndices.push_back(1);
+                uvIndices.push_back(1);
+            }
             if (matches == 12) {
                 vertexIndices.push_back(vertexIndex[0]);
                 vertexIndices.push_back(vertexIndex[2]);
@@ -136,12 +148,17 @@ bool OBJLoader::load(const char *path, const char *fileName) {
             }
             if (flag) { exit(-1); }
         } else {
-            while (fgetc(file) != '\n');
+            while (fgetc(file) != '\n') {
+                continue;
+            }
         }
     }
     if (!vertexIndices.empty()) {
         shape_map(vertices, vertice_mapper, geometries, vertexIndices, uvIndices, normalIndices);
         shape->geometries.emplace_back(currentMaterialId);
+    }
+    if (uvs.empty()) {
+        uvs.push_back(glm::vec3(0.f));
     }
 
     std::map<std::tuple<GLuint, GLuint, GLuint>, GLuint> nindex_mapper;
@@ -152,7 +169,7 @@ bool OBJLoader::load(const char *path, const char *fileName) {
             nindex_mapper.insert(std::make_pair(tuple, index++));
             shape->vertices.push_back(vertices[i]);
             shape->normals.push_back(normals[std::get<0>(each)]);
-            shape->uvs.push_back(uvs[std::get<1>(each)]);
+            shape->uvs.emplace_back(uvs[std::get<1>(each)]);
         }
     }
 

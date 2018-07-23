@@ -1,5 +1,6 @@
 #version 330
 
+uniform vec3 shapeOffset;
 uniform mat4 viewMatrix;
 uniform mat4 modelMatrix;
 uniform mat4 projMatrix;
@@ -15,7 +16,7 @@ out vec3 eyeCoord;
 out vec3 Normal;
 
 void main() {
-    vec4 position = vec4(vertPos, 1.0f);
+    vec4 position = vec4(vertPos + shapeOffset, 1.0f);
 
     vec4 worldPos = modelMatrix * position;
     vec4 eyePos = viewMatrix * worldPos;

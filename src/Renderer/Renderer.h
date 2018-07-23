@@ -13,6 +13,7 @@
 
 class Renderer {
 public:
+    static GLfloat winWidth, winHeight, ratio;
     Renderer(const glm::vec3 &trans, const glm::mat4 transformation = glm::mat4(1.f)) : shader(new ShaderProgram), translation(trans), mVao(nullptr), textures(nullptr) {
         selected = false;
         isLight = false;
@@ -50,8 +51,6 @@ private:
 //    bool updateNormal(int index, const glm::vec3 &Normal);
     void centralizeShape();
     void normalizeShape();
-
-    static constexpr GLfloat winWidth = 800.f, winHeight = 600.f, ratio = winWidth / winHeight;
     static constexpr GLfloat fovy = 60.f, near = 0.001f, far = 50.f;
     static bool hasLight;
 

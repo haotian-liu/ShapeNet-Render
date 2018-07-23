@@ -11,11 +11,12 @@
 #include <vector>
 #include <GL/glew.h>
 #include "ext.hpp"
+#include "opencv/cv.hpp"
 
 struct MaterialMap {
     char filepath[200];
     GLint width, height;
-    GLubyte *image;
+    cv::Mat image;
 };
 
 struct GLMaterialItem {

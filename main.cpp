@@ -4,12 +4,18 @@
 #include <string>
 #include <iostream>
 
+#include <opencv/cv.hpp>
+
 #include "App/App.h"
+#include "ScreenShot/ScreenShot.h"
 
-const int WinWidth = 800, WinHeight = 600;
+const int MSAA = 2;
+const int WinWidth = 256 * MSAA, WinHeight = 256 * MSAA;
 const std::string windowTitle = "3D Reconstruction";
+GLfloat Renderer::winWidth, Renderer::winHeight, Renderer::ratio;
 
-App *app = new App;
+auto app = new App;
+auto shot = new ScreenShot;
 
 inline static void mouseCallback(GLFWwindow *window, int button, int action, int mods) {
     app->mouseCallback(window, button, action, mods);
@@ -21,13 +27,15 @@ inline static void cursorPosCallback(GLFWwindow *window, double xpos, double ypo
     app->cursorPosCallback(window, xpos, ypos);
 }
 
-int main() {
+int main(int argc, const char **argv) {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+    glfwWindowHint(GLFW_SAMPLES, 2);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
     GLFWwindow *window = glfwCreateWindow(WinWidth, WinHeight, windowTitle.c_str(), nullptr, nullptr);
 
@@ -51,23 +59,43 @@ int main() {
 
     app->setViewport(screenWidth, screenHeight);
     app->setTitle(windowTitle);
-    app->init();
+    app->init(argv[1], argv[2]);
 
     glfwSetMouseButtonCallback(window, mouseCallback);
     glfwSetCursorPosCallback(window, cursorPosCallback);
     glfwSetKeyCallback(window, keyCallback);
 
-    while (!glfwWindowShouldClose(window)) {
-        if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-            glfwSetWindowShouldClose(window, true);
+    shot->set_frame_size(screenWidth, screenHeight);
+    shot->prepare_OGL();
 
+    std::vector<cv::Mat> images;
+
+    for (int i=0; i<96; i++) {
         app->idle(window);
 
         app->render();
 
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        cv::imshow("window", shot->take());
+        cv::waitKey(0);
+
+        images.push_back(shot->take());
     }
+
+    float scale = 1.0 / MSAA;
+    cv::Size size(WinWidth * scale, WinHeight * scale);
+
+    cv::Mat preview = cv::Mat::zeros(size.height * 6, size.width * 16, CV_8UC3);
+    for (int i=0; i<6; i++) {
+        for (int j=0; j<16; j++) {
+            int id = i * 16 + j;
+            cv::Mat thumb;
+            cv::resize(images[id], thumb, size, 0, 0, cv::INTER_CUBIC);
+            cv::imwrite(std::string(argv[3]) + std::to_string(id) + ".jpg", thumb);
+//            thumb.copyTo(preview(cv::Rect(j * size.width, i * size.height, size.width, size.height)));
+        }
+    }
+
+//    cv::imwrite("preview.jpg", preview);
 
     glfwTerminate();
     return 0;

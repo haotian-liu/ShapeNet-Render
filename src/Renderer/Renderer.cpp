@@ -10,7 +10,7 @@
 glm::vec3 Renderer::viewDirection(0.f, 0.f, 1.f), Renderer::lightDirection(0.f, 0.f, 1.f);
 glm::mat4 Renderer::viewTransform(1.f);
 bool Renderer::hasLight = false;
-GLfloat Renderer::Yaw = 270.f, Renderer::Pitch = 90.f, Renderer::Dist = 3.f, Renderer::lightDistance = 1.f;
+GLfloat Renderer::Yaw = 270.f, Renderer::Pitch = 90.f, Renderer::Dist = 1.75f, Renderer::lightDistance = 1.f;
 bool Renderer::childSelected;
 
 void Renderer::setupPolygon(const std::string &filepath, const std::string &filename) {
@@ -31,9 +31,11 @@ void Renderer::setupTexture() {
 
     for (int i=0; i<shape->materials.size(); i++) {
         auto &material = shape->materials[i];
+        if (strlen(material.map_Kd.filepath) == 0) { continue; }
         glBindTexture(GL_TEXTURE_2D, textures[i]);
-        material.map_Kd.image = SOIL_load_image(material.map_Kd.filepath, &material.map_Kd.width, &material.map_Kd.height, 0, SOIL_LOAD_RGB);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, material.map_Kd.width, material.map_Kd.height, 0, GL_RGB, GL_UNSIGNED_BYTE, material.map_Kd.image);
+        material.map_Kd.image = cv::imread(material.map_Kd.filepath);
+//        material.map_Kd.image = SOIL_load_image(material.map_Kd.filepath, &material.map_Kd.width, &material.map_Kd.height, 0, SOIL_LOAD_RGB);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, material.map_Kd.image.cols, material.map_Kd.image.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, material.map_Kd.image.data);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -49,28 +51,36 @@ void Renderer::setupBuffer() {
     mVao = new GLuint[shape->geometries.size()];
     glGenVertexArrays(shape->geometries.size(), mVao);
 
+    glGenBuffers(sizeof(mVbo) / sizeof(GLuint), mVbo);
+    // vertex coordinate
+    glBindBuffer(GL_ARRAY_BUFFER, mVbo[0]);
+    glBufferData(GL_ARRAY_BUFFER, shape->vertices.size() * sizeof(glm::vec3), &shape->vertices[0], GL_STATIC_DRAW);
+    // vertex normal
+    glBindBuffer(GL_ARRAY_BUFFER, mVbo[1]);
+    glBufferData(GL_ARRAY_BUFFER, shape->normals.size() * sizeof(glm::vec3), &shape->normals[0], GL_STATIC_DRAW);
+    // vertex uv
+    glBindBuffer(GL_ARRAY_BUFFER, mVbo[2]);
+    glBufferData(GL_ARRAY_BUFFER, shape->uvs.size() * sizeof(glm::vec2), &shape->uvs[0], GL_STATIC_DRAW);
+
     for (int i=0; i<shape->geometries.size(); i++) {
         glBindVertexArray(mVao[i]);
-        glGenBuffers(sizeof(mVbo) / sizeof(GLuint), mVbo);
         // vertex coordinate
         glBindBuffer(GL_ARRAY_BUFFER, mVbo[0]);
-        glBufferData(GL_ARRAY_BUFFER, shape->vertices.size() * sizeof(glm::vec3), &shape->vertices[0], GL_STATIC_DRAW);
         GLuint locVertPos = glGetAttribLocation(shader->ProgramId(), "vertPos");
         glEnableVertexAttribArray(locVertPos);
         glVertexAttribPointer(locVertPos, 3, GL_FLOAT, GL_FALSE, 0, 0);
         // vertex normal
         glBindBuffer(GL_ARRAY_BUFFER, mVbo[1]);
-        glBufferData(GL_ARRAY_BUFFER, shape->normals.size() * sizeof(glm::vec3), &shape->normals[0], GL_STATIC_DRAW);
         GLuint locVertNormal = glGetAttribLocation(shader->ProgramId(), "vertNormal");
         glEnableVertexAttribArray(locVertNormal);
         glVertexAttribPointer(locVertNormal, 3, GL_FLOAT, GL_FALSE, 0, 0);
         // vertex uv
         glBindBuffer(GL_ARRAY_BUFFER, mVbo[2]);
-        glBufferData(GL_ARRAY_BUFFER, shape->uvs.size() * sizeof(glm::vec2), &shape->uvs[0], GL_STATIC_DRAW);
         GLuint locVertUV = glGetAttribLocation(shader->ProgramId(), "vertUV");
         glEnableVertexAttribArray(locVertUV);
         glVertexAttribPointer(locVertUV, 2, GL_FLOAT, GL_FALSE, 0, 0);
         // index
+        glGenBuffers(1, &mVbo[3]);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mVbo[3]);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, shape->geometries[i].faces.size() * sizeof(GLuint),
                      &shape->geometries[i].faces[0], GL_STATIC_DRAW);
@@ -118,21 +128,21 @@ void Renderer::cursorPosCallback(GLFWwindow *window, double currentX, double cur
             viewDirection = glm::mat3(viewTransform) * glm::vec3(0.f, 0.f, 1.f);
             updateCamera();
         } else if (selected) {
-            maxDepth = calculateDepth(lastMaxTriangle, glm::vec2(currentX, currentY));
-            GLfloat makesRatio = far / (far - maxDepth) * 4;
-            glm::vec3 trans(makesRatio * diffX / winWidth, makesRatio * -diffY / winHeight, 0.f);
-            trans = viewTransform * glm::vec4(trans, 1.f);
-            translation += trans;
-#ifdef DEBUG
-            printf("Selected and moving.. %f %f\n", diffX, diffY);
-            printf("Selected and moving.. %f %f %f\n", trans.x, trans.y, trans.z);
-#endif
-            modelMatrix = glm::translate(trans) * modelMatrix;
-
-            if (isLight) {
-                lightDirection = glm::normalize(translation);
-                lightDistance = glm::length(translation);
-            }
+//            maxDepth = calculateDepth(lastMaxTriangle, glm::vec2(currentX, currentY));
+//            GLfloat makesRatio = far / (far - maxDepth) * 4;
+//            glm::vec3 trans(makesRatio * diffX / winWidth, makesRatio * -diffY / winHeight, 0.f);
+//            trans = viewTransform * glm::vec4(trans, 1.f);
+//            translation += trans;
+//#ifdef DEBUG
+//            printf("Selected and moving.. %f %f\n", diffX, diffY);
+//            printf("Selected and moving.. %f %f %f\n", trans.x, trans.y, trans.z);
+//#endif
+//            modelMatrix = glm::translate(trans) * modelMatrix;
+//
+////            if (isLight) {
+////                lightDirection = glm::normalize(translation);
+////                lightDistance = glm::length(translation);
+////            }
         }
     }
     if (RBtnDown) {
@@ -170,7 +180,7 @@ void Renderer::updateCamera() {
 
     viewDirection = glm::normalize(viewDirection);
     if (!hasLight) {
-        lightDirection = viewDirection;
+//        lightDirection = viewDirection;
     }
 
     viewMatrix = glm::lookAt(
@@ -181,6 +191,35 @@ void Renderer::updateCamera() {
 }
 
 void Renderer::render() {
+    static int iteration = 0;
+    static bool first_access = true;
+    const int iteration_per_diag = 16;
+    const int total_diags = 6;
+    const float degs = 360 / iteration_per_diag;
+    const float big_degs = 180 / total_diags;
+
+    if (first_access) {
+        viewTransform =
+                glm::rotate(glm::radians(-90.f), glm::vec3(viewTransform * glm::vec4(1.f, 0.f, 0.f, 1.f))) *
+                viewTransform;
+        first_access = false;
+    }
+
+    if (iteration == iteration_per_diag) {
+        iteration = 0;
+        viewTransform =
+                glm::rotate(glm::radians(big_degs), glm::vec3(viewTransform * glm::vec4(1.f, 0.f, 0.f, 1.f))) *
+                viewTransform;
+    }
+    ++iteration;
+
+
+    viewTransform =
+            glm::rotate(glm::radians(degs), glm::vec3(viewTransform * glm::vec4(0.f, 1.f, 0.f, 1.f))) *
+            viewTransform;
+    viewDirection = glm::mat3(viewTransform) * glm::vec3(0.f, 0.f, 1.f);
+    updateCamera();
+
     projMatrix = glm::perspective(glm::radians(fovy), ratio, near, far);
 
     shader->Activate();
@@ -199,6 +238,7 @@ void Renderer::render() {
         glUniform1i(glGetUniformLocation(shader->ProgramId(), "hasTexture"), strlen(material.map_Kd.filepath) != 0);
         glUniform1i(glGetUniformLocation(shader->ProgramId(), "textureSampler"), 0);
         glUniform1i(glGetUniformLocation(shader->ProgramId(), "selected"), selected);
+        glUniform3fv(glGetUniformLocation(shader->ProgramId(), "shapeOffset"), 1, &shapeOffset[0]);
         glUniform3fv(glGetUniformLocation(shader->ProgramId(), "Ka"), 1, &material.Ka[0]);
         glUniform3fv(glGetUniformLocation(shader->ProgramId(), "Kd"), 1, &material.Kd[0]);
         glUniform3fv(glGetUniformLocation(shader->ProgramId(), "Ks"), 1, &material.Ks[0]);
@@ -219,7 +259,7 @@ bool Renderer::loadPolygon() {
 }
 
 bool Renderer::processPolygon() {
-//    centralizeShape();
+    centralizeShape();
     normalizeShape();
     return true;
 }
@@ -234,6 +274,7 @@ void Renderer::normalizeShape() {
     for (auto &vert : shape->vertices) {
         vert /= maxVector;
     }
+    shapeOffset /= maxVector;
 }
 
 void Renderer::centralizeShape() {

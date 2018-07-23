@@ -3,6 +3,7 @@ resources/*
 assets/*
 MRBasic
 .vscode/*
+output/*
 
 # ---> Clion
 */cmake-build-*
