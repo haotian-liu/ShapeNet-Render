@@ -32,7 +32,7 @@ void App::render() {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    float bg_color = .8f;
+    float bg_color = .95f;
 
     glClearColor(bg_color,bg_color,bg_color, 1.f);
     glClearDepth(1.f);

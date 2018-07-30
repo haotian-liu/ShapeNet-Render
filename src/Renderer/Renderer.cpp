@@ -10,7 +10,7 @@
 glm::vec3 Renderer::viewDirection(0.f, 0.f, 1.f), Renderer::lightDirection(0.f, 0.f, 1.f);
 glm::mat4 Renderer::viewTransform(1.f);
 bool Renderer::hasLight = false;
-GLfloat Renderer::Yaw = 270.f, Renderer::Pitch = 90.f, Renderer::Dist = 1.75f, Renderer::lightDistance = 1.f;
+GLfloat Renderer::Yaw = 270.f, Renderer::Pitch = 90.f, Renderer::Dist = 2.f, Renderer::lightDistance = 1.f;
 bool Renderer::childSelected;
 
 void Renderer::setupPolygon(const std::string &filepath, const std::string &filename) {

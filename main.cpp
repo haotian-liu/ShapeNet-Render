@@ -70,13 +70,13 @@ int main(int argc, const char **argv) {
 
     std::vector<cv::Mat> images;
 
-    for (int i=0; i<96; i++) {
+    for (int i=0; i<80; i++) {
         app->idle(window);
 
         app->render();
 
-        cv::imshow("window", shot->take());
-        cv::waitKey(0);
+//        cv::imshow("window", shot->take());
+//        cv::waitKey(0);
 
         images.push_back(shot->take());
     }
@@ -84,8 +84,8 @@ int main(int argc, const char **argv) {
     float scale = 1.0 / MSAA;
     cv::Size size(WinWidth * scale, WinHeight * scale);
 
-    cv::Mat preview = cv::Mat::zeros(size.height * 6, size.width * 16, CV_8UC3);
-    for (int i=0; i<6; i++) {
+    cv::Mat preview = cv::Mat::zeros(size.height * 5, size.width * 16, CV_8UC3);
+    for (int i=0; i<5; i++) {
         for (int j=0; j<16; j++) {
             int id = i * 16 + j;
             cv::Mat thumb;

@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 find_package(OpenCV REQUIRED)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -framework OpenGL -lGLEW -lglfw")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -framework OpenGL -lGLEW -lglfw -march=native -O2")
 
 include_directories(Dependencies
         src/

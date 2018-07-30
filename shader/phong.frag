@@ -24,7 +24,8 @@ void main() {
     vec3 color = texture(textureSampler, vec2(texCoord.x, 1 - texCoord.y)).rgb;
 //    vec3 color = vec3(texture(textureSampler, texCoord));
 
-    vec3 KaColor = Ka;
+//    vec3 KaColor = Ka;
+    vec3 KaColor = hasTexture ? color * Ka : Ka;
     vec3 KdColor = hasTexture ? color * Kd : Kd;
     vec3 KsColor = Ks;
 
@@ -36,7 +37,7 @@ void main() {
     float NdotL = abs(dot(N, L));
     float EdotR = dot(-E, R);
 
-    float diffuse = max(NdotL, 0.f) / lightDistance * 1.05;
+    float diffuse = max(NdotL, 0.f) / lightDistance * 1.25;
     float specular = max(pow(EdotR, Shininess), 0.f) / lightDistance / 5;
 
     vec3 combined = vec3(KaColor + KdColor * diffuse + KsColor * specular);
