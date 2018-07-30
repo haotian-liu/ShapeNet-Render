@@ -39,7 +39,7 @@ cv::Mat ScreenShot::take() {
     cv::Mat view;
 
     glBindTexture(GL_TEXTURE_2D, renderedTexture);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, screenshot.data);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, screenshot.data);
     cv::flip(screenshot, view, 0);
     return view;
 }

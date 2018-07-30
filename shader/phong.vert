@@ -26,6 +26,7 @@ void main() {
     eyeCoord = eyePos.xyz;
 
     gl_Position = clipPos;
+//    gl_Position = projMatrix * modelMatrix * position;
 
 	Normal = normalize(mat3(viewMatrix * modelMatrix) * vertNormal);
 }

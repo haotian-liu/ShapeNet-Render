@@ -15,8 +15,8 @@
 
 struct MaterialMap {
     char filepath[200];
-    GLint width, height;
-    cv::Mat image;
+//    GLint width, height;
+//    cv::Mat image;
 };
 
 struct GLMaterialItem {

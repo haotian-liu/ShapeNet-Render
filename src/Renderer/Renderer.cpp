@@ -33,9 +33,13 @@ void Renderer::setupTexture() {
         auto &material = shape->materials[i];
         if (strlen(material.map_Kd.filepath) == 0) { continue; }
         glBindTexture(GL_TEXTURE_2D, textures[i]);
-        material.map_Kd.image = cv::imread(material.map_Kd.filepath);
-//        material.map_Kd.image = SOIL_load_image(material.map_Kd.filepath, &material.map_Kd.width, &material.map_Kd.height, 0, SOIL_LOAD_RGB);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, material.map_Kd.image.cols, material.map_Kd.image.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, material.map_Kd.image.data);
+
+        cv::Mat image = cv::imread(material.map_Kd.filepath);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, (image.step & 3) ? 1 : 4);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, image.step / image.elemSize());
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.cols, image.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, image.data);
+
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -244,6 +248,7 @@ void Renderer::render() {
         glUniform3fv(glGetUniformLocation(shader->ProgramId(), "Ks"), 1, &material.Ks[0]);
         glUniform1f(glGetUniformLocation(shader->ProgramId(), "Ns"), material.Ns);
         glDrawElements(GL_TRIANGLES, shape->geometries[i].faces.size(), GL_UNSIGNED_INT, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     shader->Deactivate();

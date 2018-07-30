@@ -10,7 +10,7 @@
 #include "ScreenShot/ScreenShot.h"
 
 const int MSAA = 2;
-const int WinWidth = 256 * MSAA, WinHeight = 256 * MSAA;
+const int WinWidth = 512 * MSAA, WinHeight = 512 * MSAA;
 const std::string windowTitle = "3D Reconstruction";
 GLfloat Renderer::winWidth, Renderer::winHeight, Renderer::ratio;
 
@@ -89,8 +89,8 @@ int main(int argc, const char **argv) {
         for (int j=0; j<16; j++) {
             int id = i * 16 + j;
             cv::Mat thumb;
-            cv::resize(images[id], thumb, size, 0, 0, cv::INTER_CUBIC);
-            cv::imwrite(std::string(argv[3]) + std::to_string(id) + ".jpg", thumb);
+            cv::resize(images[id], thumb, size, 0, 0, cv::INTER_AREA);
+            cv::imwrite(std::string(argv[3]) + std::to_string(id) + ".png", thumb);
 //            thumb.copyTo(preview(cv::Rect(j * size.width, i * size.height, size.width, size.height)));
         }
     }

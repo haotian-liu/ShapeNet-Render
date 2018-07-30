@@ -60,6 +60,7 @@ private:
 
     static glm::vec3 viewDirection, lightDirection;
     static glm::mat4 viewTransform;
+    static glm::vec3 upVector, frontVector;
     static GLfloat lightDistance;
 
     constexpr static GLfloat MaxDepth = 9999999999.f;
