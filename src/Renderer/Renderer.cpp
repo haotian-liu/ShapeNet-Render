@@ -277,6 +277,7 @@ void Renderer::normalizeShape() {
         }
     }
     for (auto &vert : shape->vertices) {
+        vert += shapeOffset;
         vert /= maxVector;
     }
     shapeOffset /= maxVector;
