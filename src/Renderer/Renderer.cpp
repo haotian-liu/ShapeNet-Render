@@ -6,6 +6,7 @@
 #include <fstream>
 #include "OBJLoader.h"
 #include "SOIL.h"
+#include <random>
 
 glm::vec3 Renderer::viewDirection(0.f, 0.f, 1.f), Renderer::lightDirection(0.f, 0.f, 1.f);
 glm::mat4 Renderer::viewTransform(1.f);
@@ -194,33 +195,58 @@ void Renderer::updateCamera() {
     );
 }
 
-void Renderer::render() {
+void Renderer::render(bool freeze) {
     static int iteration = 0;
     static bool first_access = true;
-    const int iteration_per_diag = 16;
-    const int total_diags = 6;
+    const int iteration_per_diag = 20;
+    const int total_diags = 18;
     const float degs = 360 / iteration_per_diag;
     const float big_degs = 180 / total_diags;
 
-    if (first_access) {
+    static std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+    static std::uniform_real_distribution<> dis_degs(-degs/2, degs/2), dis_big_degs(-big_degs/2, big_degs/2);
+    static stat_t global_stat = {0, 0};
+
+    if (first_access && !freeze) {
         viewTransform =
-                glm::rotate(glm::radians(-90.f), glm::vec3(viewTransform * glm::vec4(1.f, 0.f, 0.f, 1.f))) *
+                glm::rotate(glm::radians(-big_degs*2), glm::vec3(viewTransform * glm::vec4(1.f, 0.f, 0.f, 1.f))) *
                 viewTransform;
+        global_stat.deg_vertical -= big_degs*2;
         first_access = false;
     }
 
-    if (iteration == iteration_per_diag) {
+    if (iteration == iteration_per_diag && !freeze) {
         iteration = 0;
         viewTransform =
                 glm::rotate(glm::radians(big_degs), glm::vec3(viewTransform * glm::vec4(1.f, 0.f, 0.f, 1.f))) *
                 viewTransform;
+        global_stat.deg_vertical += big_degs;
     }
-    ++iteration;
 
+    if (!freeze) {
+        ++iteration;
+        viewTransform =
+                glm::rotate(glm::radians(degs), glm::vec3(viewTransform * glm::vec4(0.f, 1.f, 0.f, 1.f))) *
+                viewTransform;
+        global_stat.deg_horizontal += degs;
+    }
 
-    viewTransform =
-            glm::rotate(glm::radians(degs), glm::vec3(viewTransform * glm::vec4(0.f, 1.f, 0.f, 1.f))) *
-            viewTransform;
+    glm::mat4 view_transform_backup = viewTransform;
+
+    if (!freeze) {
+        statistics.deg_horizontal = dis_degs(gen);
+        statistics.deg_vertical = dis_big_degs(gen);
+    }
+
+    if (!freeze) {
+        viewTransform =
+                glm::rotate(glm::radians(statistics.deg_horizontal),
+                            glm::vec3(viewTransform * glm::vec4(0.f, 1.f, 0.f, 1.f))) *
+                glm::rotate(glm::radians(statistics.deg_vertical),
+                            glm::vec3(viewTransform * glm::vec4(1.f, 0.f, 0.f, 1.f))) *
+                viewTransform;
+    }
     viewDirection = glm::mat3(viewTransform) * glm::vec3(0.f, 0.f, 1.f);
     updateCamera();
 
@@ -233,6 +259,27 @@ void Renderer::render() {
 
     glUniform3fv(glGetUniformLocation(shader->ProgramId(), "lightDirection"), 1, &lightDirection[0]);
     glUniform1f(glGetUniformLocation(shader->ProgramId(), "lightDistance"), lightDistance);
+
+    glm::vec2 Max, Min;
+    glm::vec4 temp_vector;
+    temp_vector = projMatrix * viewMatrix * modelMatrix * glm::vec4(bboxes[0], 1.f);
+    temp_vector /= temp_vector.w;
+    Max = Min = temp_vector;
+    for (const auto &bbox : bboxes) {
+        temp_vector = projMatrix * viewMatrix * modelMatrix * glm::vec4(bbox, 1.f);
+        temp_vector /= temp_vector.w;
+        if (temp_vector.x > Max.x) { Max.x = temp_vector.x; }
+        if (temp_vector.x < Min.x) { Min.x = temp_vector.x; }
+        if (temp_vector.y > Max.y) { Max.y = temp_vector.y; }
+        if (temp_vector.y < Min.y) { Min.y = temp_vector.y; }
+    }
+
+    glm::vec2 scale_factor, offset_factor;
+    offset_factor = -(Max + Min) / 2;
+    scale_factor = Max - Min;
+
+    glUniform2fv(glGetUniformLocation(shader->ProgramId(), "scale_factor"), 1, &scale_factor[0]);
+    glUniform2fv(glGetUniformLocation(shader->ProgramId(), "offset_factor"), 1, &offset_factor[0]);
 
     for (int i=0; i<shape->geometries.size(); i++) {
         const auto &material = shape->materials[shape->geometries[i].materialID];
@@ -252,6 +299,11 @@ void Renderer::render() {
     }
 
     shader->Deactivate();
+
+    if (freeze) {
+        viewTransform = view_transform_backup;
+        statistics += global_stat;
+    }
 }
 
 bool Renderer::loadPolygon() {
@@ -265,15 +317,15 @@ bool Renderer::loadPolygon() {
 
 bool Renderer::processPolygon() {
     centralizeShape();
-    normalizeShape();
+//    normalizeShape();
     return true;
 }
 
 void Renderer::normalizeShape() {
     GLfloat maxVector = 0.00000001f;
     for (const auto &vert : shape->vertices) {
-        if (glm::length(vert) > maxVector) {
-            maxVector = glm::length(vert);
+        if (glm::length(vert + shapeOffset) > maxVector) {
+            maxVector = glm::length(vert + shapeOffset);
         }
     }
     for (auto &vert : shape->vertices) {
@@ -296,7 +348,17 @@ void Renderer::centralizeShape() {
         if (Min.y > v.y) { Min.y = v.y; }
         if (Min.z > v.z) { Min.z = v.z; }
     }
-    shapeOffset = -(Max + Min) / 2;
+//    shapeOffset = -(Max + Min) / 2;
+//    Max += shapeOffset;
+//    Min += shapeOffset;
+    bboxes.emplace_back(Max.x, Max.y, Max.z);
+    bboxes.emplace_back(Min.x, Max.y, Max.z);
+    bboxes.emplace_back(Max.x, Min.y, Max.z);
+    bboxes.emplace_back(Min.x, Min.y, Max.z);
+    bboxes.emplace_back(Max.x, Max.y, Min.z);
+    bboxes.emplace_back(Min.x, Max.y, Min.z);
+    bboxes.emplace_back(Max.x, Min.y, Min.z);
+    bboxes.emplace_back(Min.x, Min.y, Min.z);
 }
 
 /* glm::vec3 Renderer::getVertVector(int index) {

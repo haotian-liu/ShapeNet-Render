@@ -59,7 +59,8 @@ int main(int argc, const char **argv) {
 
     app->setViewport(screenWidth, screenHeight);
     app->setTitle(windowTitle);
-    app->init(argv[1], argv[2]);
+    app->set_background_path(argv[1]);
+    app->init(argv[2], argv[3]);
 
     glfwSetMouseButtonCallback(window, mouseCallback);
     glfwSetCursorPosCallback(window, cursorPosCallback);
@@ -68,29 +69,45 @@ int main(int argc, const char **argv) {
     shot->set_frame_size(screenWidth, screenHeight);
     shot->prepare_OGL();
 
-    std::vector<cv::Mat> images;
+    std::vector<cv::Mat> images, bboxes;
+    std::vector<Renderer::stat_t> stats;
 
-    for (int i=0; i<80; i++) {
+    for (int i=0; i<3*20; i++) {
         app->idle(window);
 
         app->render();
 
+        auto stat = app->get_render_statistics();
+
 //        cv::imshow("window", shot->take());
 //        cv::waitKey(0);
 
+        bboxes.push_back(shot->take());
+
+        app->render(true);
+
         images.push_back(shot->take());
+        stats.push_back(stat);
     }
 
     float scale = 1.0 / MSAA;
     cv::Size size(WinWidth * scale, WinHeight * scale);
 
-    cv::Mat preview = cv::Mat::zeros(size.height * 5, size.width * 16, CV_8UC3);
-    for (int i=0; i<5; i++) {
-        for (int j=0; j<16; j++) {
-            int id = i * 16 + j;
+    cv::Mat preview = cv::Mat::zeros(size.height * 3, size.width * 20, CV_8UC3);
+    for (int i=0; i<3; i++) {
+        for (int j=0; j<20; j++) {
+            int id = i * 20 + j;
             cv::Mat thumb;
+            auto stat = stats[id];
+
+            // store bbox image
+            cv::resize(bboxes[id], thumb, size, 0, 0, cv::INTER_AREA);
+            cv::imwrite(std::string(argv[5]) + std::to_string(id) + ".png", thumb);
+
+            // store bg image
             cv::resize(images[id], thumb, size, 0, 0, cv::INTER_AREA);
-            cv::imwrite(std::string(argv[3]) + std::to_string(id) + ".png", thumb);
+//            cv::imwrite(std::string(argv[3]) + std::to_string(stat.deg_vertical) + "," + std::to_string(stat.deg_horizontal) + ".png", thumb);
+            cv::imwrite(std::string(argv[4]) + std::to_string(id) + ".png", thumb);
 //            thumb.copyTo(preview(cv::Rect(j * size.width, i * size.height, size.width, size.height)));
         }
     }

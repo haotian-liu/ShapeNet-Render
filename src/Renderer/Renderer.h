@@ -27,16 +27,35 @@ public:
         lightDirection = glm::normalize(translation);
         lightDistance = glm::length(translation);
     }
+    struct stat_t {
+        float deg_horizontal, deg_vertical;
+        stat_t&operator+=(const stat_t &s) {
+            deg_horizontal += s.deg_horizontal;
+            deg_vertical += s.deg_vertical;
+            return *this;
+        }
+        stat_t&operator-=(const stat_t &s) {
+            deg_horizontal -= s.deg_horizontal;
+            deg_vertical -= s.deg_vertical;
+            return *this;
+        }
+        stat_t align() {
+            deg_horizontal = std::fmod(deg_horizontal, 360);
+            deg_vertical = std::fmod(deg_vertical, 360);
+            return *this;
+        }
+    };
     void setupPolygon(const std::string &filepath, const std::string &filename);
     void setupShader(const std::string &vs, const std::string &fs);
     void setupBuffer();
     void setupTexture();
-    void render();
+    void render(bool freeze=false);
     void mouseCallback(GLFWwindow *window, int button, int action, int mods);
     void cursorPosCallback(GLFWwindow *window, double xpos, double ypos, double lastX, double lastY);
     void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
     void updateCamera();
     static void unselectall() { childSelected = false; }
+    stat_t get_statistics() const { return statistics; }
 
 private:
     bool compileShader(ShaderProgram *shader, const std::string &vs, const std::string &fs);
@@ -58,6 +77,8 @@ private:
 
     bool isLight;
 
+    stat_t statistics;
+
     static glm::vec3 viewDirection, lightDirection;
     static glm::mat4 viewTransform;
     static glm::vec3 upVector, frontVector;
@@ -68,6 +89,7 @@ private:
     glm::mat3 lastMaxTriangle;
 
     glm::vec3 shapeOffset, translation;
+    std::vector<glm::vec3> bboxes;
 
     ShaderProgram *shader;
     GLuint *mVao, mVbo[5];
