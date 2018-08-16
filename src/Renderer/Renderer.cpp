@@ -300,7 +300,7 @@ void Renderer::render(bool freeze) {
 
     shader->Deactivate();
 
-    if (freeze) {
+    if (freeze || background_path == "null") {
         viewTransform = view_transform_backup;
         statistics += global_stat;
     }

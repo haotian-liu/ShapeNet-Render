@@ -56,6 +56,7 @@ public:
     void updateCamera();
     static void unselectall() { childSelected = false; }
     stat_t get_statistics() const { return statistics; }
+    void set_background_path(const std::string &path) { background_path = path; }
 
 private:
     bool compileShader(ShaderProgram *shader, const std::string &vs, const std::string &fs);
@@ -74,6 +75,8 @@ private:
     static bool hasLight;
 
     Shape *shape;
+
+    std::string background_path;
 
     bool isLight;
 

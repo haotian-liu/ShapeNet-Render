@@ -84,9 +84,11 @@ int main(int argc, const char **argv) {
 
         bboxes.push_back(shot->take());
 
-        app->render(true);
+        if (std::strcmp(argv[1], "null") != 0) {
+            app->render(true);
+            images.push_back(shot->take());
+        }
 
-        images.push_back(shot->take());
         stats.push_back(stat);
     }
 
@@ -103,6 +105,7 @@ int main(int argc, const char **argv) {
             // store bbox image
             cv::resize(bboxes[id], thumb, size, 0, 0, cv::INTER_AREA);
             cv::imwrite(std::string(argv[5]) + std::to_string(id) + ".png", thumb);
+            if (std::strcmp(argv[1], "null") == 0) { continue; }
 
             // store bg image
             cv::resize(images[id], thumb, size, 0, 0, cv::INTER_AREA);

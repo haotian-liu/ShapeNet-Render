@@ -12,6 +12,7 @@ void App::init(const std::string &path, const std::string &file) {
     r->setupShader("shader/phong.vert", "shader/phong.frag");
     r->setupBuffer();
     r->setupTexture();
+    r->set_background_path(background_path);
     background_shader_texture();
 }
 
